@@ -5,9 +5,6 @@ interface DividerProps {
 }
 
 function Divider({ className, orientation = 'horizontal' }: DividerProps) {
-
-
-
   return (
     <div
       className={`${className} ${orientation === 'vertical' ? 'border-l' : 'border-t'} border-gray-300 dark:border-gray-600`}

@@ -35,10 +35,12 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <NavBar />
-          <Divider orientation='horizontal' />
-          <SideBar />
-          <main>{children}</main>
-          <Divider orientation='horizontal' />
+          <Divider orientation="horizontal" />
+          <div className="flex flex-row min-h-screen">
+            <SideBar />
+            <main className="w-full">{children}</main>
+          </div>
+          <Divider orientation="horizontal" />
           <Footer />
         </ThemeProvider>
       </body>
