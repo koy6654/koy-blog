@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.navbar-footer {
+  @apply w-full flex flex-row items-center py-6;
+}
