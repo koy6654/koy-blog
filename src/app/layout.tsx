@@ -9,41 +9,41 @@ import Footer from '@/components/layouts/footer';
 import Divider from '@/components/ui/divider';
 
 const geistSans = localFont({
-  src: '../../public/fonts/GeistVF.woff',
-  variable: '--font-geist-sans',
-  weight: '100 900',
+	src: '../../public/fonts/GeistVF.woff',
+	variable: '--font-geist-sans',
+	weight: '100 900',
 });
 const geistMono = localFont({
-  src: '../../public/fonts/GeistMonoVF.woff',
-  variable: '--font-geist-mono',
-  weight: '100 900',
+	src: '../../public/fonts/GeistMonoVF.woff',
+	variable: '--font-geist-mono',
+	weight: '100 900',
 });
 
 export const metadata: Metadata = {
-  title: 'Koy Blog',
+	title: 'Koy Blog',
 };
 
 export default function RootLayout({
-  children,
+	children,
 }: Readonly<{
-  children: React.ReactNode;
+	children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <NavBar />
-          <Divider orientation="horizontal" />
-          <div className="flex flex-row min-h-screen">
-            <SideBar />
-            <main className="w-full">{children}</main>
-          </div>
-          <Divider orientation="horizontal" />
-          <Footer />
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+	return (
+		<html lang="en">
+			<body
+				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+			>
+				<ThemeProvider attribute="class" defaultTheme="dark">
+					<NavBar />
+					<Divider orientation="horizontal" />
+					<div className="flex flex-row min-h-screen">
+						<SideBar />
+						<main className="w-full">{children}</main>
+					</div>
+					<Divider orientation="horizontal" />
+					<Footer />
+				</ThemeProvider>
+			</body>
+		</html>
+	);
 }

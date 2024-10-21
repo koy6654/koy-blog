@@ -1,7 +1,7 @@
 import React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, VariantProps } from 'class-variance-authority';
-import { tailwindMerge } from '@utils/base';
+import { tailwindMerge } from '@/utils/functions/base';
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
