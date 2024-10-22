@@ -1,9 +1,10 @@
 import { MdxComponents } from '@/components/mdx/index';
+import { Pages } from '@/utils/enums';
 import { getPostFileData } from '@/utils/functions/gray-matter';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 
 async function CareerPage() {
-	const post = await getPostFileData('career');
+	const post = await getPostFileData(Pages.CAREER);
 
 	return (
 		<div>
