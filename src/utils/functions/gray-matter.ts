@@ -3,11 +3,22 @@ import path from 'path';
 import matter from 'gray-matter';
 import { sync } from 'glob';
 
+type MdxFileNames = 'career';
+
 const postsDirectory = path.join(process.cwd(), 'src/app');
 
 export async function getPostFilePaths(): Promise<string[]> {
   const postPaths: string[] = sync(`${postsDirectory}/**/*.mdx`);
   return postPaths;
+}
+
+export async function getPostFilePath(fileName: MdxFileNames): Promise<string> {
+  const postPaths: string[] = sync(`${postsDirectory}/${fileName}/**/*.mdx`);
+  if (postPaths.length === 0) {
+    return '';
+  }
+
+  return postPaths[0];
 }
 
 export async function getPostFileDatas() {
@@ -22,4 +33,12 @@ export async function getPostFileDatas() {
   });
 
   return posts;
+}
+
+export async function getPostFileData(fileName: MdxFileNames) {
+  const filePath = await getPostFilePath(fileName);
+  const markdownWithMeta = fs.readFileSync(filePath, 'utf-8');
+  const { data, content } = matter(markdownWithMeta);
+
+  return { data, content };
 }

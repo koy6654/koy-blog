@@ -1,15 +1,15 @@
 import { MdxComponents } from '@/components/mdx/index';
-import { getPostFileDatas } from '@/utils/functions/gray-matter';
+import { getPostFileData } from '@/utils/functions/gray-matter';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 
 async function CareerPage() {
-	const posts = await getPostFileDatas();
-	console.log(posts[0].content);
+	const post = await getPostFileData('career');
+
 	return (
 		<div>
 			<main className="flex flex-col p-20">
 				<MDXRemote
-					source={posts[1].content}
+					source={post.content}
 					options={{
 						parseFrontmatter: true,
 						mdxOptions: {

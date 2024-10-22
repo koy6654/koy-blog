@@ -10,11 +10,6 @@ function Sidebar() {
 					<Divider orientation="vertical" />
 					<ul className="ml-4">
 						<li>
-							<Link href="/main" className="block py-2">
-								Main
-							</Link>
-						</li>
-						<li>
 							<Link href="/career" className="block py-2">
 								Career
 							</Link>
