@@ -35,7 +35,7 @@ export default function RootLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
-				<ThemeProvider attribute="class" defaultTheme={DARK_THEME}>
+				<ThemeProvider attribute="class" defaultTheme="dark">
 					<NavBar />
 					<Divider orientation="horizontal" />
 					<div className="flex flex-row min-h-screen">
