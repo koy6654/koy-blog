@@ -8,7 +8,7 @@ async function CareerPage() {
 
 	return (
 		<div>
-			<main className="flex flex-col p-20">
+			<main className="flex flex-col p-10 sm:p-20">
 				<MDXRemote
 					source={post.content}
 					options={{
