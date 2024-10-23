@@ -1,5 +1,6 @@
 import Divider from '@/components/ui/divider';
 import { Pages } from '@/utils/enums';
+import { uppercaseFirstLetter } from '@/utils/functions/base';
 import Link from 'next/link';
 
 function Sidebar() {
@@ -17,7 +18,7 @@ function Sidebar() {
 								return (
 									<li key={page}>
 										<Link href={endpoint} className="block py-2">
-											{page}
+											{uppercaseFirstLetter(page)}
 										</Link>
 									</li>
 								);
