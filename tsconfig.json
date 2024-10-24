@@ -25,7 +25,9 @@
       "@assets/*": ["./src/assets/*"],
       "@utils/*": ["./src/utils/*"],
       "@styles/*": ["./src/styles/*"],
-      "@types/*": ["./src/types/*"]
+      "@types/*": ["./src/types/*"],
+      "@fonts": ["./public/fonts/*"],
+      "@images": ["./public/images/*"]
     }
   },
   "include": [

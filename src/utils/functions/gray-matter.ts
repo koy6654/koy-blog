@@ -12,9 +12,11 @@ export async function getPostFilePaths(): Promise<string[]> {
 }
 
 export async function getPostFilePath(fileName: Pages): Promise<string> {
-  const postPaths: string[] = sync(`${postsDirectory}/${fileName}/**/*.mdx`);
+  const postPaths: string[] = sync(
+    `${postsDirectory}/${fileName}/**/${fileName}.mdx`,
+  );
   if (postPaths.length === 0) {
-    return '';
+    throw new Error('ba12171d-f3a1-5bce-b141-70460c71b307');
   }
 
   return postPaths[0];

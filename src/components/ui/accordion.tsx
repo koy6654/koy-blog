@@ -6,7 +6,20 @@ import { ChevronDownIcon } from '@radix-ui/react-icons';
 
 import { tailwindMerge } from '@/utils/functions/base';
 
-const Accordion = AccordionPrimitive.Root;
+// const Accordion = AccordionPrimitive.Root;
+const Accordion = React.forwardRef<
+	React.ElementRef<typeof AccordionPrimitive.Root>,
+	React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Root> & {
+		className?: string;
+	}
+>(({ className, ...props }, ref) => (
+	<AccordionPrimitive.Root
+		ref={ref}
+		className={tailwindMerge('w-full', className)}
+		{...props}
+	/>
+));
+Accordion.displayName = 'Accordion';
 
 const AccordionItem = React.forwardRef<
 	React.ElementRef<typeof AccordionPrimitive.Item>,
@@ -16,7 +29,7 @@ const AccordionItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<AccordionPrimitive.Item
 		ref={ref}
-		className={tailwindMerge('border-b', className)}
+		className={tailwindMerge('', className)}
 		{...props}
 	/>
 ));
@@ -32,7 +45,7 @@ const AccordionTrigger = React.forwardRef<
 		<AccordionPrimitive.Trigger
 			ref={ref}
 			className={tailwindMerge(
-				'flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180',
+				'flex flex-1 items-center justify-between text-sm font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180',
 				className,
 			)}
 			{...props}
@@ -52,7 +65,7 @@ const AccordionContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
 	<AccordionPrimitive.Content
 		ref={ref}
-		className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+		className="text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
 		{...props}
 	>
 		<div className={tailwindMerge('pb-4 pt-0', className)}>{children}</div>

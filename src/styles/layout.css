@@ -5,3 +5,11 @@
 .navbar-footer {
   @apply w-full flex flex-row items-center py-6;
 }
+
+.sidebar-block {
+  @apply block py-1 hover:underline;
+}
+
+.sidebar-is-active {
+  @apply text-violet-500 font-bold;
+}
