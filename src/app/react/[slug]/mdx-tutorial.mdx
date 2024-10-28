@@ -65,7 +65,7 @@ title: 'Next.js 환경에서 MDX 파일 올리기'
 date: '2024-10-21'
 description: 'Next.js 환경에서 next-mdx-remote, gray-matter를 사용해 MDX 파일을 블로그에 적용시키기'
 ---
-<br />
+
 
 // 콘텐츠
 ## NPM 모듈 정보
@@ -160,5 +160,39 @@ async function MdxViewer() {
 }
 
 export default MdxViewer;
+```
+<br /><br />
 
+
+## 추가 정보
+---
+#### MDX 기본 컴포넌트들을 커스터마이징 할 수 있다.
+```tsx
+const MdxComponents = {
+  hr: (props: React.HTMLAttributes<HTMLHRElement>) => (
+    <Divider {...props} orientation="horizontal" />
+  ),
+  h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h1 className="text-4xl font-bold mt-6 mb-4" {...props} />
+  ),
+  h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h2 className="text-3xl font-semibold mt-5 mb-3" {...props} />
+  ),
+}
+
+function MdxViewer({ content }: MdxViewerProps) {
+  return (
+    <MDXRemote
+      source={content}
+      options={{
+        parseFrontmatter: true,
+        mdxOptions: {
+          remarkPlugins: [],
+          rehypePlugins: []
+        }
+      }}
+      components={MdxComponents}
+    />
+  );
+}
 ```
