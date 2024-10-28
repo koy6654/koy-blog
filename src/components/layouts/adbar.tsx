@@ -4,7 +4,7 @@ function AdBar() {
 	const pages = Object.values(Pages);
 
 	return (
-		<aside className="w-[250px] h-full sticky top-0 hidden overflow-hidden sm:block pt-56">
+		<aside className="min-w-[250px] h-full sticky top-0 hidden overflow-hidden sm:block pt-56">
 		</aside>
 	);
 }

@@ -1,20 +1,37 @@
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter';
+import matter, { GrayMatterFile } from 'gray-matter';
 import { sync } from 'glob';
 import { Pages } from '@utils/enums';
 
+interface GrayMatterData {
+  id: string;
+  title: string;
+  date: string;
+  description: string;
+}
+
+export interface PostFileData {
+  data: GrayMatterData;
+  content: string;
+}
+
 const postsDirectory = path.join(process.cwd(), 'src/app');
 
-export async function getPostFilePaths(): Promise<string[]> {
-  const postPaths: string[] = sync(`${postsDirectory}/**/*.mdx`);
+export function getPostFilePaths(target?: string): string[] {
+  let targetDirectory = '';
+  if (target != null) {
+    targetDirectory = `/${target}`;
+  }
+
+  const postPaths: string[] = sync(
+    `${postsDirectory}${targetDirectory}/**/*.mdx`,
+  );
   return postPaths;
 }
 
-export async function getPostFilePath(fileName: Pages): Promise<string> {
-  const postPaths: string[] = sync(
-    `${postsDirectory}/${fileName}/**/${fileName}.mdx`,
-  );
+export function getPostFilePath(fileName: Pages): string {
+  const postPaths: string[] = sync(`${postsDirectory}/**/${fileName}.mdx`);
   if (postPaths.length === 0) {
     throw new Error('ba12171d-f3a1-5bce-b141-70460c71b307');
   }
@@ -22,24 +39,30 @@ export async function getPostFilePath(fileName: Pages): Promise<string> {
   return postPaths[0];
 }
 
-export async function getPostFileDatas() {
-  const filesPaths = await getPostFilePaths();
+export function getPostFileDatas(): PostFileData[] {
+  const filesPaths = getPostFilePaths();
 
   const posts = filesPaths.map((filePath) => {
     const markdownWithMeta = fs.readFileSync(filePath, 'utf-8');
 
-    const { data, content } = matter(markdownWithMeta);
+    const { data, content }: GrayMatterFile<string> = matter(markdownWithMeta);
 
-    return { data, content };
+    return { data: data as GrayMatterData, content };
   });
 
   return posts;
 }
 
-export async function getPostFileData(fileName: Pages) {
-  const filePath = await getPostFilePath(fileName);
-  const markdownWithMeta = fs.readFileSync(filePath, 'utf-8');
-  const { data, content } = matter(markdownWithMeta);
+export function getPostFileDataByName(fileName: Pages): PostFileData {
+  const filePath = getPostFilePath(fileName);
+  const postFileData = getPostFileDataByPath(filePath);
 
-  return { data, content };
+  return postFileData;
+}
+
+export function getPostFileDataByPath(filePath: string): PostFileData {
+  const markdownWithMeta = fs.readFileSync(filePath, 'utf-8');
+  const { data, content }: GrayMatterFile<string> = matter(markdownWithMeta);
+
+  return { data: data as GrayMatterData, content };
 }

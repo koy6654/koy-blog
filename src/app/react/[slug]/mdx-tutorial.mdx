@@ -1,0 +1,164 @@
+---
+id: 'mdx-tutorial'
+title: 'Next.js 환경에서 MDX 파일 올리기'
+date: '2024-10-21'
+description: 'Next.js 환경에서 next-mdx-remote, gray-matter를 사용해 MDX 파일을 블로그에 적용시키기 (기초)'
+---
+
+## NPM 모듈 정보
+
+---
+
+### **gray-matter**
+
+```markdown
+MDX 파일의 메타데이터(헤더)와 콘텐츠를 분리시켜주는 유용한 라이브러리
+```
+<br />
+
+### **next-mdx-remote**
+
+```markdown
+gray-matter를 사용해 분리된 메타데이터와 콘텐츠를 뷰어로 보여주는 라이브러리
+```
+<br /><br />
+
+
+## NPM 모듈 설치
+
+---
+<br />
+```markdown
+yarn add gray-matter next-mdx-remote
+```
+<br /><br />
+
+
+## 사용 예제
+
+---
+
+#### 1. MDX 파일 및 디렉토리 생성
+
+(디렉토리 예제)
+
+```markdown
+/src
+  ├─ /app
+  │   ├─ /react
+  │   │   ├─ page.tsx               // Slug 리스트 페이지
+  │   │   ├─ /[slug]
+  │   │   │   ├─ mdx-tutorial.mdx   // MDX 파일
+  │   │   │   └─ page.tsx            // MDX 뷰어 페이지
+  └─ /components
+      └─ mdx-viewer.tsx              // MDX 뷰어 컴포넌트
+```
+<br />
+
+(MDX 파일 예제)
+
+```markdown
+// 메타데이터 (헤더)
+---
+id: 'mdx-tutorial'
+title: 'Next.js 환경에서 MDX 파일 올리기'
+date: '2024-10-21'
+description: 'Next.js 환경에서 next-mdx-remote, gray-matter를 사용해 MDX 파일을 블로그에 적용시키기'
+---
+<br />
+
+// 콘텐츠
+## NPM 모듈 정보
+---
+### **gray-matter**
+```markdown
+MDX 파일의 메타데이터(헤더)와 콘텐츠를 분리시켜주는 유용한 라이브러리
+```
+<br />
+
+#### 2. gray-matter를 사용해 MDX의 메타데이터와 콘텐츠 값을 가져온다.
+
+```tsx
+import fs from 'fs';
+import matter, { GrayMatterFile } from 'gray-matter';
+
+interface GrayMatterData {
+  id: string;
+  title: string;
+  date: string;
+  description: string;
+}
+
+// filePath는 MDX 파일의 경로를 가져온다.
+function getPostFileDataByPath(filePath: string): PostFileData {
+  const markdownWithMeta = fs.readFileSync(filePath, 'utf-8');
+  const { data, content }: GrayMatterFile<string> = matter(markdownWithMeta);
+
+  return { 
+	  data: data as GrayMatterData, // 메타데이터
+	  content                       // 콘텐츠
+  };
+}
+```
+<br />
+
+#### 3. gray-matter의 메타데이터를 리스트로 만든다.
+
+```tsx
+import PostPreview from '@/components/pages/post-preview';
+import { getPostFileDataByPath } from '@/utils/functions/gray-matter';
+import Link from 'next/link';
+
+function ReactPage() {
+  const paths = [
+    'Your MDX paths 1',
+  ]
+
+  const postFileDatas = paths.map((path) => {
+    return getPostFileDataByPath(path);
+  })
+
+  return (
+    <div>
+      <main className="flex flex-col p-10 sm:p-20">
+        {postFileDatas.map((file, index) => (
+          <Link key={index} href={'Your Link href'} passHref>
+            <PostPreview key={index} date={file.data.date} title={file.data.title} description={file.data.description}></PostPreview>
+          </Link>
+        ))}
+      </main>
+    </div>
+  );
+}
+
+export default ReactPage;
+
+```
+<br />
+
+#### 4. gray-matter의 콘텐츠를 next-mdx-remote를 사용해 페이지를 보여준다.
+
+```tsx
+import { Pages } from '@/utils/enums';
+import { getPostFileDataByName } from '@/utils/functions/gray-matter';
+
+async function MdxViewer() {
+  const post = getPostFileDataByPath('Your MDX file path');
+
+  return (
+    <MDXRemote
+      source={post.content}
+      options={{
+        parseFrontmatter: true,
+        mdxOptions: {
+          remarkPlugins: [],
+          rehypePlugins: []
+        }
+      }}
+    />
+  );
+}
+
+export default MdxViewer;
+
+```

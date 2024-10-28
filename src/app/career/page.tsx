@@ -1,25 +1,14 @@
-import { MdxComponents } from '@/components/mdx/index';
-import { Pages } from '@/utils/enums';
-import { getPostFileData } from '@/utils/functions/gray-matter';
-import { MDXRemote } from 'next-mdx-remote/rsc';
+import MdxViewer from '@components/pages/mdx-viewer';
+import { Pages } from '@utils/enums';
+import { getPostFileDataByName } from '@utils/functions/gray-matter';
 
 async function CareerPage() {
-	const post = await getPostFileData(Pages.CAREER);
+	const post = getPostFileDataByName(Pages.CAREER);
 
 	return (
 		<div>
 			<main className="flex flex-col p-10 sm:p-20">
-				<MDXRemote
-					source={post.content}
-					options={{
-						parseFrontmatter: true,
-						mdxOptions: {
-							remarkPlugins: [],
-							rehypePlugins: []
-						}
-					}}
-					components={MdxComponents}
-				/>
+				<MdxViewer content={post.content} />
 			</main>
 		</div>
 	);

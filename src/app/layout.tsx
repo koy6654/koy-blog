@@ -8,7 +8,6 @@ import SideBar from '@/components/layouts/sidebar';
 import AdBar from '@/components/layouts/adbar';
 import Footer from '@/components/layouts/footer';
 import Divider from '@/components/ui/divider';
-import { DARK_THEME } from '@/utils/constants';
 
 const geistSans = localFont({
 	src: '../../public/fonts/GeistVF.woff',

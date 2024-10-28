@@ -1,6 +1,37 @@
-import Divider from '@components/ui/divider';
 
-export const MdxComponents = {
+import { MDXRemote } from 'next-mdx-remote/rsc';
+import Divider from '@components/ui/divider';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+export interface MdxViewerSlug {
+  params: {
+    slug: string;
+  }
+}
+
+interface CodeBlockProps {
+  children: any;
+}
+
+interface MdxViewerProps {
+  content: string;
+}
+
+function CodeBlock({ children }: CodeBlockProps) {
+  const className = children.props.className;
+  const language = className ? className.replace(/language-/, '') : '';
+
+  const childrenString = children.props.children;
+
+  return (
+    <SyntaxHighlighter language={language} style={vscDarkPlus}>
+      {childrenString}
+    </SyntaxHighlighter>
+  );
+};
+
+const MdxComponents = {
   hr: (props: React.HTMLAttributes<HTMLHRElement>) => (
     <Divider {...props} orientation="horizontal" />
   ),
@@ -26,10 +57,10 @@ export const MdxComponents = {
     <p className="mt-2 mb-0 text-base" {...props} />
   ),
   ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
-    <ul className="list-disc list-inside mt-2 mb-4" {...props} />
+    <ul className="list-disc mt-2 mb-4" {...props} />
   ),
   ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
-    <ol className="list-decimal list-inside mt-2 mb-4" {...props} />
+    <ol className="list-decimal mt-2 mb-4" {...props} />
   ),
   li: (props: React.HTMLAttributes<HTMLLIElement>) => (
     <li className="ml-4" {...props} />
@@ -52,7 +83,25 @@ export const MdxComponents = {
   code: (props: React.HTMLAttributes<HTMLElement>) => (
     <code className="bg-gray-200 p-1 rounded dark:bg-gray-700" {...props} />
   ),
-  pre: (props: React.HTMLAttributes<HTMLElement>) => (
-    <pre className="bg-gray-100 p-4 rounded mt-4 mb-4 dark:bg-gray-800" {...props} />
-  ),
+  pre: (props: React.HTMLAttributes<HTMLElement>) => {
+    return <CodeBlock>{props.children}</CodeBlock>;
+  },
 };
+
+function MdxViewer({ content }: MdxViewerProps) {
+  return (
+    <MDXRemote
+      source={content}
+      options={{
+        parseFrontmatter: true,
+        mdxOptions: {
+          remarkPlugins: [],
+          rehypePlugins: []
+        }
+      }}
+      components={MdxComponents}
+    />
+  );
+}
+
+export default MdxViewer;
