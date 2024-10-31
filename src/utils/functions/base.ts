@@ -1,6 +1,5 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Pages } from '@utils/enums';
 
 export function tailwindMerge(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

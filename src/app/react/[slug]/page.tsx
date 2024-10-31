@@ -1,16 +1,17 @@
 import MdxViewer, { MdxViewerSlug } from '@/components/pages/mdx-viewer';
 import { Pages } from '@/utils/enums';
-import { getPostFileDataByName } from '@/utils/functions/gray-matter';
+import { Suspense } from 'react';
+import { LoadingContent } from '@/components/ui/loading';
 
 async function ReactMdxViewerPage({ params }: MdxViewerSlug) {
   const page = params.slug as Pages;
 
-  const post = getPostFileDataByName(page);
-
   return (
     <div>
       <main className="flex flex-col p-10 sm:p-20">
-        <MdxViewer content={post.content} />
+        <Suspense fallback={<LoadingContent />}>
+          <MdxViewer page={page} />
+        </Suspense>
       </main>
     </div>
   );

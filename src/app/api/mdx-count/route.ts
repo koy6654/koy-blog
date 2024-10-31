@@ -1,6 +1,5 @@
 import { Pages } from '@/utils/enums';
 import { getPostFilePaths } from '@/utils/functions/gray-matter';
-import { NextRequest } from 'next/server';
 
 export type PageCounts = {
   [K in Pages]: number;

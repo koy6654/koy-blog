@@ -1,4 +1,4 @@
-import { Pages } from '@utils/enums';
+export const BASE_DOMAIN = process.env.BASE_DOMAIN;
 
 export const DARK_THEME = 'dark';
 export const LIGHT_THEME = 'light';

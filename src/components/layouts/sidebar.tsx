@@ -5,8 +5,10 @@ import { Pages } from '@/utils/enums';
 import { uppercaseFirstLetter } from '@/utils/functions/base';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { PageCounts } from '@/app/api/mdx-count/route';
+import { getPageCounts } from '@/utils/services';
+import { LoadingContent, LoadingSidebar } from '@components/ui/loading';
 
 function Sidebar() {
 	const currentPage = usePathname();
@@ -14,15 +16,13 @@ function Sidebar() {
 	const [pageCounts, setPageCounts] = useState<PageCounts | null>(null);
 	const pages = Object.values(Pages);
 
-	const fetchPosts = async (): Promise<void> => {
-		const response = await fetch('/api/mdx-count');
-		const result = await response.json();
-
+	const getPosts = async (): Promise<void> => {
+		const result = await getPageCounts();
 		setPageCounts(result);
 	};
 
 	useEffect(() => {
-		fetchPosts();
+		getPosts();
 	}, []);
 
 	return (

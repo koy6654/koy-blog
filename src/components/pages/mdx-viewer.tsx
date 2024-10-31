@@ -1,8 +1,8 @@
-
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import Divider from '@components/ui/divider';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { getPost } from '@/utils/services';
 
 export interface MdxViewerSlug {
   params: {
@@ -15,10 +15,10 @@ interface CodeBlockProps {
 }
 
 interface MdxViewerProps {
-  content: string;
+  content: string | null | undefined;
 }
 
-function CodeBlock({ children }: CodeBlockProps) {
+const CodeBlock = ({ children }: CodeBlockProps) => {
   const className = children.props.className;
   const language = className ? className.replace(/language-/, '') : '';
 
@@ -88,10 +88,12 @@ const MdxComponents = {
   },
 };
 
-function MdxViewer({ content }: MdxViewerProps) {
+async function MdxViewer({ page }: { page: string }) {
+  const post = await getPost({ page });
+
   return (
     <MDXRemote
-      source={content}
+      source={post.content}
       options={{
         parseFrontmatter: true,
         mdxOptions: {
