@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import matter, { GrayMatterFile } from 'gray-matter';
 import { sync } from 'glob';
-import { Pages } from '@utils/enums';
+import { MdxFiles } from '@utils/enums';
 
 interface GrayMatterData {
   id: string;
@@ -30,7 +30,7 @@ export function getPostFilePaths(target?: string): string[] {
   return postPaths;
 }
 
-export function getPostFilePath(fileName: Pages): string {
+export function getPostFilePath(fileName: MdxFiles): string {
   const postPaths: string[] = sync(`${postsDirectory}/**/${fileName}.mdx`);
   if (postPaths.length === 0) {
     throw new Error('ba12171d-f3a1-5bce-b141-70460c71b307');
@@ -53,7 +53,7 @@ export function getPostFileDatas(): PostFileData[] {
   return posts;
 }
 
-export function getPostFileDataByName(fileName: Pages): PostFileData {
+export function getPostFileDataByName(fileName: MdxFiles): PostFileData {
   const filePath = getPostFilePath(fileName);
   const postFileData = getPostFileDataByPath(filePath);
 

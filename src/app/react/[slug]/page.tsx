@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { LoadingContent } from '@/components/ui/loading';
 
 async function ReactMdxViewerPage({ params }: MdxViewerSlug) {
-  const page = params.slug as Pages;
+  const page = params.slug;
 
   return (
     <div>

@@ -2,11 +2,12 @@ import { MDXRemote } from 'next-mdx-remote/rsc';
 import Divider from '@components/ui/divider';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { getPost } from '@/utils/services';
+import { getPostFileDataByName } from '@/utils/functions/gray-matter';
+import { MdxFiles } from '@/utils/enums';
 
 export interface MdxViewerSlug {
   params: {
-    slug: string;
+    slug: MdxFiles;
   }
 }
 
@@ -88,9 +89,9 @@ const MdxComponents = {
   },
 };
 
-async function MdxViewer({ page }: { page: string }) {
-  const post = await getPost({ page });
-
+async function MdxViewer({ page }: { page: MdxFiles }) {
+  const post = getPostFileDataByName(page);
+  // const post = await getPost({ page });
   return (
     <MDXRemote
       source={post.content}
