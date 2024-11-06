@@ -15,10 +15,6 @@ interface CodeBlockProps {
   children: any;
 }
 
-interface MdxViewerProps {
-  content: string | null | undefined;
-}
-
 const CodeBlock = ({ children }: CodeBlockProps) => {
   const className = children.props.className;
   const language = className ? className.replace(/language-/, '') : '';
@@ -87,11 +83,18 @@ const MdxComponents = {
   pre: (props: React.HTMLAttributes<HTMLElement>) => {
     return <CodeBlock>{props.children}</CodeBlock>;
   },
+  MdxDivider: (props: React.HTMLAttributes<HTMLDivElement>) => (
+    <>
+      <br /><br />
+      <Divider />
+      <br /><br />
+    </>
+  ),
 };
 
 async function MdxViewer({ page }: { page: MdxFiles }) {
   const post = getPostFileDataByName(page);
-  // const post = await getPost({ page });
+
   return (
     <MDXRemote
       source={post.content}
