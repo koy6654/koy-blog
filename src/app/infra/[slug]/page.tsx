@@ -2,7 +2,7 @@ import MdxViewer, { MdxViewerSlug } from '@/components/pages/mdx-viewer';
 import { Suspense } from 'react';
 import { LoadingContent } from '@/components/ui/loading';
 
-async function ReactMdxViewerPage({ params }: MdxViewerSlug) {
+async function InfraMdxViewerPage({ params }: MdxViewerSlug) {
   const page = params.slug;
 
   return (
@@ -16,4 +16,4 @@ async function ReactMdxViewerPage({ params }: MdxViewerSlug) {
   );
 }
 
-export default ReactMdxViewerPage;
+export default InfraMdxViewerPage;

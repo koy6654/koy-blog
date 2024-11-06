@@ -1,15 +1,15 @@
 import { LoadingContent } from '@/components/ui/loading';
 import MdxViewer from '@components/pages/mdx-viewer';
-import { MdxFiles, Pages } from '@utils/enums';
+import { MdxFiles } from '@utils/enums';
 import { getPostFileDataByName } from '@utils/functions/gray-matter';
 import { Suspense } from 'react';
 
-async function CareerPage() {
+async function CareerMdxViewerPage() {
 	const post = getPostFileDataByName(MdxFiles.CAREER);
 
 	return (
 		<div>
-			<main className="flex flex-col p-10 sm:p-20">
+			<main className="max-w-[940px] flex flex-col p-10 sm:p-20">
 				<Suspense fallback={<LoadingContent />}>
 					<MdxViewer page={MdxFiles.CAREER} />
 				</Suspense>
@@ -18,4 +18,4 @@ async function CareerPage() {
 	);
 }
 
-export default CareerPage;
+export default CareerMdxViewerPage;
