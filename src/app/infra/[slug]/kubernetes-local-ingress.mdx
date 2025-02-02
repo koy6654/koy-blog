@@ -1,0 +1,406 @@
+---
+id: 'kubernetes-local-ingress'
+title: 'Kubernetes Ingress를 로컬 환경에서 구성하기'
+date: '2024-01-31'
+description: 'Kubernetes의 Ingress와 Nginx를 활용하여 로컬 환경에서 리버스 프록시를 설계해보기'
+---
+
+# Kubernetes를 활용해 로컬에서 리버스 프록시 환경 구성하기
+---
+<br />
+## 개요
+
+이전 포스팅에서 Kubernetes의 개념과 기본 구조를 정리해보았고, 이번에는 이를 바탕으로 로컬 환경에서 Kubernetes 클러스터를 구성해보려고 한다. 구성의 흐름은 아래와 같다.<br />
+<br />
+```
+Postman → Ingress Controller(NodePort) → Ingress → Service -> ClusterIP -> Pod
+```
+<br />
+Postman을 통해 외부 트래픽을 생성한다.<br />
+Ingress(리버스 프록시)는 생성된 외부 트래픽을 적절한 서비스로 라우팅하는 역할을 한다.<br />
+ClusterIP는 클러스터 내부에서만 접근 가능한 서비스로, 이를 통해 요청은 해당 Pod로 전달된다.<br />
+또한, Pod 배포 관리를 위해 Deployment를 활용한다. Deployment는 여러 개의 Pod를 관리하며, 애플리케이션의 복제본을 원하는 만큼 생성하여 가용성과 안정성을 높인다.<br />
+<br />
+*로컬 환경이기에 실제 서비스 환경에서 사용하는 LoadBalancer는 제외하였다. 대신, NodePort를 사용하여 Ingress Controller로 트래픽을 처리하고, 이를 클러스터 내의 ClusterIP 서비스와 연계하여 실제 클라우드 환경에서의 배포 시나리오와 유사한 방식으로 설정했다.*<br />
+
+<MdxDivider />
+
+## 디렉토리 구조
+
+```
+k8s
+├── my-app
+│   ├── Dockerfile
+│   ├── index.js
+│   ├── my-app.ym
+│   ├── package-lock.json
+│   ├── package.json
+│   └── scripts
+│       ├── docker-entrypoint.sh
+│       └── docker-run.sh
+└── nginx
+    └── ingress
+        ├── ingress-my-app.yml
+        └── ingress-nginx-controller.yaml
+```
+
+<MdxDivider />
+
+## My App
+
+#### Node.js 서버 생성
+
+My App은 단순 응답만 하면 되므로 “Hello, World!” 를 응답하는 Node.js 서버를 만든다.
+
+```javascript
+const express = require('express');
+const os = require('os');
+const app = express();
+
+let requestCount = 0;
+
+app.get('/', (req, res) => {
+  requestCount += 1;
+  const message = `Pod request count ${requestCount} / OS ${os.hostname()}`;
+
+  console.log(message);
+
+  res.send(message);
+});
+
+const PORT = 32100;
+
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
+```
+
+#### Dockerfile 파일 생성
+
+Kubernetes Deployment(Pod 배포 및 관리)를 위해 Docker image를 먼저 만들어주어야 하기에 아래와 같은 Dockerfile을 먼저 생성한다.
+
+```docker
+# Dockerfile 생성
+FROM node:18 AS builder
+
+ENV WORKDIR=/opt/docker-tutorial
+
+RUN apt-get update; \
+	apt-get install neovim -y;
+
+COPY package*.json ./
+RUN npm install
+
+COPY . /opt/docker-tutorial
+
+WORKDIR $WORKDIR
+
+CMD ["node", "index.js"]
+```
+
+#### Docker Image 생성
+
+my-app 디렉토리 내에서 아래 커맨드를 입력하여 docker-tutorial 이라는 docker image를 생성한다.
+
+```bash
+# 이미지 생성
+docker build . -t docker-tutorial
+
+# 이미지 확인
+docker images | grep docker-tutorial
+```
+
+#### Kubernetes Service, Deployment 생성
+
+Service는 클러스터 내부에서만 접근 가능한 ClusterIP를 생성하고,
+Deployment는 위에서 만든 docker image(docker-tutorial)를 사용하여 Pod을 생성 및 관리한다.
+
+이를 위해 Service와 Deployment 정보가 담긴 my-app.yml 파일을 아래와 같이 생성한다.
+
+```yaml
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: default
+  name: my-app
+  labels:
+    app: my-app
+spec:
+  selector:
+    app: my-app
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - port: 32100
+    targetPort: 32100
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: my-app
+  name: my-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - image: docker-tutorial
+        imagePullPolicy: IfNotPresent
+        name: my-app
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+
+```
+
+#### Kubernetes Service, Deployment 적용
+
+아래 커맨드를 입력하여 Service와 Deployment를 생성하고, 정상적으로 생성되었는지 확인한다.
+
+```bash
+# Kubernetes 적용 (이때 my-app.yml 파일 경로를 입력해줘야 한다)
+kubectl apply -f ./my-app.yml
+
+# Kubernetes 확인
+kubectl get all
+```
+
+```bash
+NAME                          READY   STATUS    RESTARTS   AGE
+pod/my-app-85ff6544cf-ld694   1/1     Running   0          23m
+pod/my-app-85ff6544cf-npg52   1/1     Running   0          23m
+
+NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)     AGE
+service/kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP     38d
+service/my-app       ClusterIP   10.106.162.95   <none>        32100/TCP   35m
+
+NAME                     READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/my-app   2/2     2            2           35m
+
+NAME                                DESIRED   CURRENT   READY   AGE
+replicaset.apps/my-app-85ff6544cf   2         2         2       35m
+```
+
+<MdxDivider />
+
+## Nginx
+
+# Ingress Controller 생성
+
+Kubernetes에서 공식적으로 Ingress Controller를 설치하는 방법은 아래와 같다.
+
+```bash
+curl -LO https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml -o /path/your/directory/ingress-nginx-controller.yaml
+```
+
+`ingress-nginx-controller.yaml`이 생성되면 로컬 환경 구성을 위해 Controller의 Service ****부분을 찾아 아래와 같이 NodePort ****로 바꿔준다.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
+    app.kubernetes.io/version: 1.12.0-beta.0
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  externalTrafficPolicy: Local
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - appProtocol: http
+    name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+  - appProtocol: https
+    name: https
+    port: 443
+    protocol: TCP
+    targetPort: https
+  selector:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+  type: NodePort    # 이 부분을 LoadBalancer -> NodePort로 변경
+```
+
+(Optional)
+ingress-controller에 validating webhook 관련 에러 로그가 찍히는 걸 방지하기 위해 Deployment에 TLS 인증서를 경로에 맞게 추가해준다. 물론 https 연결을 위한 과정이므로 인증서 추가 과정은 생략해도 무방하다.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - args:
+        - /nginx-ingress-controller
+        - --publish-service=$(POD_NAMESPACE)/ingress-nginx-controller
+        - --election-id=ingress-nginx-leader
+        - --controller-class=k8s.io/ingress-nginx
+        - --ingress-class=nginx
+        - --configmap=$(POD_NAMESPACE)/ingress-nginx-controller
+        - --validating-webhook=:8443
+        # 아래 내용이 TLS 인증서 경로
+        - --validating-webhook-certificate=/usr/local/certificates/cert
+        - --validating-webhook-key=/usr/local/certificates/key
+        volumeMounts:
+        - mountPath: /usr/local/certificates/
+          name: webhook-cert
+          readOnly: true
+```
+
+```bash
+# 위에서 확인한 TLS 인증서 경로에 openssl 명령어를 통해 TLS 인증서를 추가해준다.
+openssl req -x509 -newkey rsa:2048 -keyout /usr/local/certificates/key -out /usr/local/certificates/cert -nodes -subj "/CN=ingress-nginx-controller-admission.default.svc"
+```
+
+인증서 작업까지 완료되었으면 `ingress-nginx-controller.yaml`을 적용시켜준다.
+
+```bash
+kubectl apply -f /path/your/directory/ingress-nginx-controller.yaml
+```
+
+적용된 모든 요소 확인
+
+```bash
+kubectl -n ingress-nginx get all
+kubectl -n ingress-nginx logs -f <your-ingress-controller-pod-name>
+```
+
+```bash
+NAME                                            READY   STATUS      RESTARTS   AGE
+pod/ingress-nginx-admission-create-nczdz        0/1     Completed   0          3m39s
+pod/ingress-nginx-admission-patch-ljrgl         0/1     Completed   0          3m39s
+pod/ingress-nginx-controller-7f9bbf6ddd-bxd2z   1/1     Running     0          3m39s
+
+NAME                                         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+service/ingress-nginx-controller             NodePort    10.100.128.61   <none>        80:30080/TCP,443:30443/TCP   3m39s
+service/ingress-nginx-controller-admission   ClusterIP   10.108.250.37   <none>        443/TCP                      3m39s
+
+NAME                                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/ingress-nginx-controller   1/1     1            1           3m39s
+
+NAME                                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/ingress-nginx-controller-7f9bbf6ddd   1         1         1       3m39s
+
+NAME                                       COMPLETIONS   DURATION   AGE
+job.batch/ingress-nginx-admission-create   1/1           4s         3m39s
+job.batch/ingress-nginx-admission-patch    1/1           4s         3m39s
+```
+
+---
+
+# Ingress
+
+Ingress는 클러스터 외부에서 내부로의 트래픽을 라우팅하는 클러스터 리소스로, Ingress Controller가 이를 기반으로 실제 트래픽을 처리한다. 즉, Ingress Controller를 위한 연결 규칙 정의서라고 볼 수 있다.
+
+```bash
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-app-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  # - host: my-app.local  # 외부에서 접근할 도메인, 생략 시 '*'로 적용된다.
+    - http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: my-app
+              port:
+                number: 32100 # my-app 포트 잘 확인하기
+```
+
+my-app과 Ingress의 Namespace가 동일한지 확인하고 `ingress-my-app.yml`를 적용시켜준다.
+
+```bash
+kubectl apply -f /path/your/directory/ingress-my-app.yml
+```
+
+적용 결과 확인
+
+```bash
+kubectl -n ingress-nginx get all
+```
+
+```bash
+NAME                                            READY   STATUS      RESTARTS   AGE
+pod/ingress-nginx-admission-create-nczdz        0/1     Completed   0          6m28s
+pod/ingress-nginx-admission-patch-ljrgl         0/1     Completed   0          6m28s
+pod/ingress-nginx-controller-7f9bbf6ddd-bxd2z   1/1     Running     0          6m28s
+
+NAME                                         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+service/ingress-nginx-controller             NodePort    10.100.128.61   <none>        80:30080/TCP,443:30443/TCP   6m28s
+service/ingress-nginx-controller-admission   ClusterIP   10.108.250.37   <none>        443/TCP                      6m28s
+
+NAME                                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/ingress-nginx-controller   1/1     1            1           6m28s
+
+NAME                                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/ingress-nginx-controller-7f9bbf6ddd   1         1         1       6m28s
+
+NAME                                       COMPLETIONS   DURATION   AGE
+job.batch/ingress-nginx-admission-create   1/1           4s         6m28s
+job.batch/ingress-nginx-admission-patch    1/1           4s         6m28s
+```
+
+(Optional)
+
+Docker Desktop으로 Kubernetes를 사용하는 사용자는 마스터 노드 IP와 Ingress Controller 포트를 사용하더라도 클러스터 로컬 연결이 이뤄지지 않을 수 있다. 이럴 경우 아래 방법을 사용해서 localhost:8080 포트로 묶어버리고 사용한다.
+
+```bash
+kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8080:80
+```
+
+응답 확인
+
+```bash
+curl http://localhost:8080
+```
+
+<MdxDivider />
+
+## 부하 테스트
+
+100번의 Request를 통해 my-app pod 2개에 균등하게 Request가 오는지 확인해본다다.
+
+```bash
+#!/bin/bash
+
+echo "Test start"
+
+for i in {1..100}; do
+  curl -s http://localhost:8080 | grep -o 'my-app-[^ ]*'  # pod 이름만 추출
+done | sort | uniq -c | sort -nr
+
+echo "Test done"
+
+```
+
+결과
+
+각각의 Pod에서 50개의 Request를 정상적으로 처리한 것을 확인할 수 있다.
+
+![k8s-ingress.png](/images/kubernetes-local-ingress.png)
