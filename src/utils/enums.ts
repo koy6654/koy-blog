@@ -9,4 +9,5 @@ export enum MdxFiles {
   MDX_TUTORIAL = 'mdx-tutorial',
   DOCKER_KUBENETES_TUTORIAL = 'docker-kubenetes-install',
   KUBENETES_DESCRIPTION = 'kubernetes-description',
+  KUBENETES_LOCAL_INGRESS = 'kubernetes-local-ingress',
 }
