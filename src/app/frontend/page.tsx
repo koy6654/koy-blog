@@ -4,7 +4,7 @@ import { getPostFileDataByPath, getPostFilePaths } from '@/utils/functions/gray-
 import Link from 'next/link';
 
 function ReactPage() {
-  const paths = getPostFilePaths(Pages.REACT);
+  const paths = getPostFilePaths(Pages.FRONTEND);
 
   const postFileDatas = paths.map((path) => {
     return getPostFileDataByPath(path);
@@ -14,7 +14,7 @@ function ReactPage() {
     <div>
       <main className="flex flex-col p-10 sm:p-20">
         {postFileDatas.map((file, index) => (
-          <Link key={index} href={`/${Pages.REACT}/${file.data.id}`} passHref>
+          <Link key={index} href={`/${Pages.FRONTEND}/${file.data.id}`} passHref>
             <PostPreview key={index} date={file.data.date} title={file.data.title} description={file.data.description}></PostPreview>
           </Link>
         ))}

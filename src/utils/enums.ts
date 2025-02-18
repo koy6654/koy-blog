@@ -1,6 +1,6 @@
 export enum Pages {
   CAREER = 'career',
-  REACT = 'react',
+  FRONTEND = 'frontend',
   INFRA = 'infra',
 }
 
