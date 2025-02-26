@@ -12,6 +12,7 @@ export async function GET() {
     const pageCounts: PageCounts = {
       [Pages.CAREER]: 0,
       [Pages.FRONTEND]: 0,
+      [Pages.BACKEND]: 0,
       [Pages.INFRA]: 0,
     };
 
