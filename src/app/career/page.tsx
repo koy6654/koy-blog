@@ -5,17 +5,17 @@ import { getPostFileDataByName } from '@utils/functions/gray-matter';
 import { Suspense } from 'react';
 
 async function CareerMdxViewerPage() {
-	const post = getPostFileDataByName(MdxFiles.CAREER);
+  const post = getPostFileDataByName(MdxFiles.CAREER);
 
-	return (
-		<div>
-			<main className="max-w-[940px] flex flex-col p-10 sm:p-20">
-				<Suspense fallback={<LoadingContent />}>
-					<MdxViewer page={MdxFiles.CAREER} />
-				</Suspense>
-			</main>
-		</div>
-	);
+  return (
+    <div>
+      <main className="max-w-[940px] flex flex-col p-10 sm:p-20">
+        <Suspense fallback={<LoadingContent />}>
+          <MdxViewer page={MdxFiles.CAREER} />
+        </Suspense>
+      </main>
+    </div>
+  );
 }
 
 export default CareerMdxViewerPage;

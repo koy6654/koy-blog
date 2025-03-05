@@ -8,7 +8,7 @@ import { MdxFiles } from '@/utils/enums';
 export interface MdxViewerSlug {
   params: {
     slug: MdxFiles;
-  }
+  };
 }
 
 interface CodeBlockProps {
@@ -69,13 +69,19 @@ const MdxComponents = {
     <em className="italic text-black dark:text-gray-300" {...props} />
   ),
   a: (props: React.HTMLAttributes<HTMLAnchorElement>) => (
-    <a className="text-blue-500 hover:underline dark:text-blue-300" {...props} />
+    <a
+      className="text-blue-500 hover:underline dark:text-blue-300"
+      {...props}
+    />
   ),
   img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
     <img className="max-w-full h-auto" {...props} />
   ),
   blockquote: (props: React.BlockquoteHTMLAttributes<HTMLQuoteElement>) => (
-    <blockquote className="border-l-4 pl-4 italic text-black dark:text-gray-400 mt-4 mb-4" {...props} />
+    <blockquote
+      className="border-l-4 pl-4 italic text-black dark:text-gray-400 mt-4 mb-4"
+      {...props}
+    />
   ),
   code: (props: React.HTMLAttributes<HTMLElement>) => (
     <code className="bg-gray-200 p-1 rounded dark:bg-gray-700" {...props} />
@@ -85,9 +91,11 @@ const MdxComponents = {
   },
   MdxDivider: (props: React.HTMLAttributes<HTMLDivElement>) => (
     <>
-      <br /><br />
+      <br />
+      <br />
       <Divider />
-      <br /><br />
+      <br />
+      <br />
     </>
   ),
 };
@@ -102,8 +110,8 @@ async function MdxViewer({ page }: { page: MdxFiles }) {
         parseFrontmatter: true,
         mdxOptions: {
           remarkPlugins: [],
-          rehypePlugins: []
-        }
+          rehypePlugins: [],
+        },
       }}
       components={MdxComponents}
     />

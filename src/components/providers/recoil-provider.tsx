@@ -9,6 +9,6 @@ interface RecoilProviderProps {
 
 const RecoilProvider = ({ children }: RecoilProviderProps) => {
   return <RecoilRoot>{children}</RecoilRoot>;
-}
+};
 
 export default RecoilProvider;

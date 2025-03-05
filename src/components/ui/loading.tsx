@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import Skeleton from '@components/ui/skeleton';
 
@@ -19,7 +19,7 @@ const LoadingContent = () => {
       </div>
     </div>
   );
-}
+};
 
 const LoadingSidebar = () => {
   return (
@@ -30,6 +30,6 @@ const LoadingSidebar = () => {
       <Skeleton className="h-8 w-full mb-3 rounded-md" />
     </div>
   );
-}
+};
 
 export { LoadingContent, LoadingSidebar };
