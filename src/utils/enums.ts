@@ -13,10 +13,11 @@ export enum MdxFiles {
   MDX_TUTORIAL = 'mdx-tutorial',
 
   // BACKEND
-  JAVASCRIPT_FUNCTION_OVERLOADING = 'javascript-function-overloading',
+  TYPESCRIPT_FUNCTION_OVERLOADING = 'typescript-function-overloading',
+  TYPESCRIPT_DECORATOR = 'typescript-decorator',
 
   // INFRA
   DOCKER_KUBENETES_TUTORIAL = 'docker-kubenetes-install',
-  KUBENETES_DESCRIPTION = 'kubernetes-description',
-  KUBENETES_LOCAL_INGRESS = 'kubernetes-local-ingress',
+  KUBERNETES_DESCRIPTION = 'kubernetes-description',
+  KUBERNETES_LOCAL_INGRESS = 'kubernetes-local-ingress',
 }

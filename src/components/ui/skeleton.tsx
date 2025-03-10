@@ -1,4 +1,4 @@
-import { tailwindMerge } from "@utils/functions/base";
+import { tailwindMerge } from '@utils/functions/base';
 
 function Skeleton({
   className,
@@ -6,10 +6,13 @@ function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={tailwindMerge("animate-pulse rounded-md bg-primary/10", className)}
+      className={tailwindMerge(
+        'animate-pulse rounded-md bg-primary/10',
+        className,
+      )}
       {...props}
     />
-  )
+  );
 }
 
 export default Skeleton;

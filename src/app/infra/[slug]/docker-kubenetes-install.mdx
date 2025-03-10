@@ -1,24 +1,24 @@
 ---
 id: 'docker-kubenetes-install'
-title: '로컬(Mac)에서 Kubenetes 학습 환경 만들기'
+title: '[Docker, Kubernetes] 로컬(Mac)에서 학습 환경 만들기'
 date: '2024-11-06'
-description: '학습을 위해 로컬에서 Docker, Kubenetes 환경 만들기(Docker Desktop만 사용)'
+description: '학습을 위해 로컬에서 Docker, Kubernetes 환경 만들기(Docker Desktop만 사용)'
 ---
 
-# 로컬(Mac)에서 Kubenetes 환경 만들기
+# 로컬(Mac)에서 Kubernetes 환경 만들기
 ---
 <br />
 ## 개요
 백엔드 업무와 SRE 업무를 겸업해서 하다보니 클라우드 컴퓨팅 플랫폼(AWS, GCP 등)과 밀접한 관계를 맺게 되었고, 학습 겸 알게된 지식을 차근차근 정리해보기 위해 Infra 포스팅을 시작하게 되었습니다.
 
-Kubenetes 리소스를 직접 다뤄보기 위해 우선 로컬에서 Docker Desktop을 사용하여 `docker`, `kubectl` CLI를 사용할 수 있는 환경을 만들어보겠습니다.
+Kubernetes 리소스를 직접 다뤄보기 위해 우선 로컬에서 Docker Desktop을 사용하여 `docker`, `kubectl` CLI를 사용할 수 있는 환경을 만들어보겠습니다.
 
 
 <MdxDivider />
 
 
 ## Docker Desktop 설치
-우선 빠르게 Kubenetes 로컬 환경을 구축하는것이 목표이므로 Docker Desktop을 설치합니다. 2018년 이후부터 로컬에서 별도의 Minikube 설치 없이 Docker Desktop 하나만으로 기본 CLI `docker`,`kubectl` 를 전부 사용할 수 있게 되었습니다.
+우선 빠르게 Kubernetes 로컬 환경을 구축하는것이 목표이므로 Docker Desktop을 설치합니다. 2018년 이후부터 로컬에서 별도의 Minikube 설치 없이 Docker Desktop 하나만으로 기본 CLI `docker`,`kubectl` 를 전부 사용할 수 있게 되었습니다.
 <br />
 [도커 데스크탑 설치 홈페이지 접속](https://www.docker.com/products/docker-desktop/)
     - Download Docker Desktop 클릭 → 본인 OS에 맞는 어플리케이션 설치
@@ -41,12 +41,12 @@ Kubenetes 리소스를 직접 다뤄보기 위해 우선 로컬에서 Docker Des
 <MdxDivider />
 
 
-## Docker Desktop에서 Kubenetes 설치
-- Docker Desktop → Settings → Enable Kubenetes를 클릭
+## Docker Desktop에서 Kubernetes 설치
+- Docker Desktop → Settings → Enable Kubernetes를 클릭
 - 오른쪽 아래의 Apply & restart 버튼을 클릭
 - 재시작 후 `kubectl version` 커맨드를 통해 설치 확인
-- Docker Desktop 왼쪽 아래 Kubenetes 아이콘에 초록불이 들어왔는지 확인
-- CLI의 Kubenetes 버전과 Docker Desktop 스크린 샷의 Kubenetes 버전이 같은지 확인
+- Docker Desktop 왼쪽 아래 Kubernetes 아이콘에 초록불이 들어왔는지 확인
+- CLI의 Kubernetes 버전과 Docker Desktop 스크린 샷의 Kubernetes 버전이 같은지 확인
 
 ```bash
 ~ ❯ kubectl version                                                  at ⎈ docker-desktop

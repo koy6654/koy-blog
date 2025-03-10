@@ -1,0 +1,172 @@
+---
+id: 'typescript-decorator'
+title: '[Typescript] 데코레이터를 직접 만들고 활용해보기'
+date: '2025-03-05'
+description: 'Typescript 환경에서 데코레이터 개념을 익히고 활용해보기'
+---
+
+# Decorator
+---
+<br />
+## 개요
+***Cron***을 활용한 ***Scheduler daemon***을 만들다보니 각 ***Job***에 ***try..catch*** 구문을 반복적으로 사용하게 되었습니다.<br />
+이로 인해 코드가 점점 중복되는 것이 보였고, 이를 개선할 방법을 고민하게 되었습니다.<br />
+해결책을 찾던 중, 데코레이터를 활용하면 코드 중복을 줄이고 예외 처리를 더 깔끔하게 처리할 수 있다는 것을 알게되어, 개념을 익히고 직접 적용해보았습니다.
+
+
+<MdxDivider />
+
+## 데코레이터의 개념
+데코레이터란, 기존 클래스, 함수에 새로운 기능을 추가하는 함수입니다.<br />
+데코레이터를 사용하면 기존 코드에 영향을 주지 않고도 객체의 행동을 확장하거나 수정할 수 있으며, 데코레이터가 적용된 객체는 기존 기능을 그대로 유지하면서 추가적인 기능을 가지게 됩니다. 또한, 코드의 중복을 줄이고 유지보수성을 향상시킬 수 있습니다.
+
+
+<MdxDivider />
+
+## 데코레이터의 종류
+#### 클래스 데코레이터
+클래스 데코레이터는 주로 클래스의 동작 수정 또는 확장 시 사용되며, 예제는 아래와 같습니다.<br />
+```typescript
+// 클래스 데코레이터 함수 정의
+function classDecorator() {
+    console.log('classDecorator evaluated');
+
+    /**
+     * @constructor TestClass1
+     */
+    return function (constructor: typeof TestClass1) {
+        console.log('classDecorator called');
+    };
+}
+
+// 클래스 데코레이터를 클래스에 사용
+@classDecorator()
+export class TestClass1 {
+    constructor() {}
+}
+```
+<br />
+
+#### 메서드 데코레이터
+메서드 데코레이터는 주로 클래스 내부의 메서드의 동작 수정 또는 확장 시 사용되며, 예제는 아래와 같습니다.<br />
+```typescript
+// 메서드 데코레이터 함수 정의
+function classMethodDecorator() {
+    console.log('classMethodDecorator evaluated');
+
+    /**
+     * @target TestClass2.prototype
+     * @propertyKey 메서드 이름
+     * @descriptor 메서드 속성 설명자
+     */
+    return function (target: typeof TestClass2.prototype, propertyKey: string, descriptor: PropertyDescriptor) {
+        console.log('classMethodDecorator called');
+    };
+}
+
+class TestClass2 {
+    constructor() {}
+
+    // 메서드 데코레이터를 클래스 메서드에 사용
+    @classMethodDecorator()
+    method() {
+        console.log(TestClass2.prototype);
+    }
+}
+```
+<br />
+
+#### 프로퍼티 데코레이터
+프로퍼티 데코레이터는 클래스의 속성을 다룰 때 사용하며, 예제는 아래와 같습니다.
+```typescript
+// 프로퍼티 데코레이터 함수 정의
+function classPropertyDecorator() {
+    console.log('classPropertyDecorator evaluated');
+
+    /**
+     * @target TestClass3.prototype
+     * @propertyKey 프로퍼티 이름
+     */
+    return function (target: typeof TestClass3.prototype, propertyKey: string) {
+        console.log('classPropertyDecorator called');
+    };
+}
+
+class TestClass3 {
+    // 프로퍼티 데코레이터를 클래스 속성에 사용
+    @classPropertyDecorator()
+    property: string;
+
+    constructor() {}
+}
+```
+<br />
+
+#### 파라미터 데코레이터
+파라미터 데코레이터는 클래스나 함수의 파라미터에 적용되며, 예제는 아래와 같습니다.
+```typescript
+// 파라미터 데코레이터 함수 정의
+function paramsDecorator() {
+    console.log('paramsDecorator evaluated');
+
+    /**
+     * @target TestClass4
+     * @propertyKey 파라미터가 포함된 메서드의 이름
+     * @parameterIndex 파라미터의 인덱스 (0부터 시작)
+     */
+    return function (constructor: typeof TestClass4, propertyKey: string, parameterIndex: number) {
+        console.log('classPropertyDecorator called');
+    };
+}
+
+class TestClass4 {
+    constructor(
+        // 파라미터 데코레이터를 클래스 파라미터에 사용
+        @paramsDecorator() private readonly params: string
+    ) {}
+
+    test() {
+        console.log(this.params);
+    }
+}
+```
+
+<MdxDivider />
+
+## Cron Job에서 데코레이터 활용
+개요에서 설명드렸던대로 ***handleCustomError*** 라는 메서드 데코레이터를 생성하여, ***Cron Job***에서 반복적으로 사용하던 ***try..catch*** 구문을 간소화시켜보겠습니다.<br />
+```typescript
+// 메서드 데코레이터 정의
+export function handleCustomError() {
+    return function (_: typeof CronService.prototype, propertyKey: string, descriptor: PropertyDescriptor) {
+        const originalMethod = descriptor.value;
+
+        descriptor.value = async function () {
+            try {
+                return await originalMethod.apply(this, []);
+            } catch (_) {
+                console.error('Something wrong!');
+            }
+        };
+
+        return descriptor;
+    };
+}
+
+@Injectable()
+export class CronService {
+    constructor(private readonly testService: TestService) {}
+
+    @Cron('*/1 * * * * *')
+    @handleCustomError() // 메서드 데코레이터 사용
+    async testCronJob() {
+        await this.testService.start();
+        throw new Error('b2be3933-d85b-58cd-8df0-45d8f1fdfd8b');
+    }
+}
+```
+<br />
+결과를 다음과 같이 확인할 수 있습니다.
+```shell
+Something wrong!
+```
