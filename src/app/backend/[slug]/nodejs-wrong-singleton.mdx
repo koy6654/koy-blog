@@ -1,0 +1,268 @@
+---
+id: 'nodejs-wrong-singleton'
+title: '[Node.js] 잘못된 싱글톤 패턴으로 발생한 RangeError 해결하기'
+date: '2025-03-24'
+description: 'Node.js에서 잘못된 싱글톤 패턴을 사용하다가 RangeError: Maximum call stack size exceeded 에러를 만나 해결하게 된 과정'
+---
+
+# [Node.js] 잘못된 싱글톤 패턴으로 발생한 RangeError 해결하기
+---
+<br />
+
+## 개요
+Node.js 환경에서 잘못된 싱글톤 패턴 코드를 방치하고 서비스 코드에서 사용하던 중, 순환 참조로 인해 ***RangeError: Maximum call stack size exceeded*** 에러를 만나게 되었습니다. 
+따라서 해당 에러의 원인을 분석해보고 임시로 해결해보고자 합니다.
+
+<MdxDivider />
+
+## 싱글톤 패턴과 의존성 주입의 개념
+#### 싱글톤 패턴
+싱글톤 패턴은 객체 생성에 대한 디자인 패턴으로, 하나의 클래스에 대해 단 하나의 인스턴스만을 생성하는 것이 목적입니다.<br />
+생성된 인스턴스는 애플리케이션 전체에서 공유되며, 동일한 인스턴스를 계속해서 반환하여 자원 낭비를 방지합니다.
+
+<br />
+#### 의존성 주입
+의존성 주입(DI)란 객체 간의 의존성을 외부에서 주입하는 디자인 패턴입니다.<br />
+즉, 객체가 자신이 필요한 의존 객체를 직접 생성하는 것이 아니라, 외부에서 해당 객체를 생성하여 주입해주는 방식입니다.<br />
+이 방식은 객체 간의 결합도를 낮추고, 테스트 용이성과 유연성을 높이는 데 도움을 줍니다.
+
+<MdxDivider />
+
+## 잘못된 싱글톤 패턴 클래스의 사용 예제
+실제로 사용되었던 싱글톤 패턴 클래스 예제입니다.<br />
+모든 클래스는 아래와 같은 구조로 설계되어있으며, ***getInstance*** 메서드를 살펴보면 클래스 인스턴스를 어떻게 사용하고 싶은지 의도는 파악할 수 있습니다.
+```typescript
+export default class Repository {
+    private static instance: Repository;
+
+    private constructor() {}
+
+    public static getInstance(): Repository {
+        if (!Repository.instance) {
+            Repository.instance = new Repository();
+        }
+
+        return Repository.instance;
+    }
+    
+    public async get() {
+        console.log('get');
+    }
+}
+```
+<br />
+하지만 의도와는 다르게 ***getInstance*** 메서드를 제일 상위 코드에서 선언하여 DI로 주입하는 방식을 사용하지 않고,
+아래와 같이 ***Repository*** 클래스가 필요한 모든 곳에서 클래스 인스턴스를 각각 생성하여 잘못된 형태로 사용하고 있었습니다.<br />
+이에 따라 기존에 사용하던 DI 주입 방식과 잘못된 싱글톤 패턴 사용이 겹쳐 다음과 같이 혼란스러운 형식의 코드들이 양산되었습니다.
+```typescript
+import FirstRepository from '/path/first/repository';
+import SecondRepository from '/path/some/repository';
+import ThirdRepository from '/path/third/repository';
+import FourthRepository from '/path/fourth/repository';
+
+export default class CommonRepository {
+    private static instance: CommonRepository;
+
+    firstRepository: FirstRepository;
+    secondRepository: SecondRepository;
+
+    thirdRepository: ThirdRepository;
+    fourthRepository: FourthRepository;
+	
+    constructor(
+        // 기존 올바른 DI 주입 방식
+        firstRepository: FirstRepository,
+        secondRepository: SecondRepository,
+    ) {
+        this.firstRepository = firstRepository;
+        this.secondRepository = secondRepository;
+
+        // 잘못된 싱글톤 패턴 클래스 사용 예제
+        this.thirdRepository = ThirdRepository.getInstance();
+        this.fourthRepository = FourthRepository.getInstance();
+    }
+    
+    public async get() {
+        console.log('get');
+    }
+}
+```
+<br />
+
+그러던 중 누군가에 의해 아래와 같이 모든 레포지토리 클래스가 모인 ***SingletonRepository***가 탄생하였고, 레거시 코드 중 많은 곳에서 해당 클래스를 사용중이였습니다.
+```typescript
+import FirstRepository from '/path/first/repository';
+import SecondRepository from '/path/some/repository';
+import {CommonRepository} from '/path/common/repository';
+
+export default class SingletonRepository {
+    private static instance: SingletonRepository;
+
+    commonRepository: CommonRepository;
+
+    constructor() {
+        this.firstRepository = FirstRepository.getInstance();
+        this.secondRepository = SecondRepository.getInstance();
+    
+        this.commonRepository = new CommonRepository(
+            this.firstRepository,
+            this.secondRepository,
+        );
+
+        this.fifthRepository = fifthRepository.getInstance();
+        this.sixthRepository = sixthRepository.getInstance();
+    }
+
+    public static getInstance(): SingletonRepository {
+        if (!SingletonRepository.instance) {
+            SingletonRepository.instance = new SingletonRepository();
+        }
+        return SingletonRepository.instance;
+    }
+}
+
+export {SingletonRepository};
+
+```
+
+<br />
+이에 따라 추가 서비스 개발이 필요했던 저는 기존 방식대로 ***SingletonRepository***를 사용하여 아래와 같이 새로운 ***Controller*** 와 ***Service*** 를 생성하게 되었습니다.
+```typescript
+import {CommonRepository} from '/path/common/repository';
+
+module.exports = (router: Router) => {
+    router.post('/api/endpoint', async (request: Request, response: Response, next: NextFunction) => {
+        try {
+            const commonRepository = CommonRepository.getInstance();
+
+            await commonRepository.someFunction();
+
+            return response.json({data: 'ok'});
+        } catch (error) {
+            next(error);
+        }
+    });
+}
+```
+```typescript
+import SingletonRepository from '/path/singleton/repository';
+
+export default class NewService {
+    private static instance: NewService;
+
+    singletonRepository: SingletonRepository;
+
+    private constructor() {
+        this.singletonRepository: SingletonRepository.getInstance();
+    }
+
+    public static getInstance(): NewService {
+        if (!NewService.instance) {
+            NewService.instance = new NewService();
+        }
+        return NewService.instance;
+    }
+    
+    public async get() {
+        console.log('get');
+    }
+}
+```
+<br />
+이 상태에서 레거시 비즈니스 로직에 의해 ***CommonRepository*** 에서 ***NewService*** 서비스 로직을 사용해야할 상황이 발생하게 되었습니다.
+```typescript
+import FirstRepository from '/path/first/repository';
+import SecondRepository from '/path/some/repository';
+import ThirdRepository from '/path/third/repository';
+import FourthRepository from '/path/fourth/repository';
+import NewService from '/path/new_service';
+
+export default class CommonRepository {
+    private static instance: CommonRepository;
+
+    firstRepository: FirstRepository;
+    secondRepository: SecondRepository;
+
+    thirdRepository: ThirdRepository;
+    fourthRepository: FourthRepository;
+	
+    newService: NewService;
+
+    constructor(
+        firstRepository: FirstRepository,
+        secondRepository: SecondRepository,
+    ) {
+        this.firstRepository = firstRepository;
+        this.secondRepository = secondRepository;
+
+        this.thirdRepository = ThirdRepository.getInstance();
+        this.fourthRepository = FourthRepository.getInstance();
+
+        this.newService = NewService.getInstance();
+    }
+    
+    public async get() {
+        console.log('get');
+    }
+}
+```
+<br />
+***당연스럽게도 위의 코드는 RangeError: Maximum call stack size exceeded 에러와 함께 터져버리게 되었습니다.***
+
+<MdxDivider />
+
+## RangeError 의 원인 분석
+
+#### RangeError: Maximum call stack size exceeded 란
+자바스크립트에서 함수가 호출될 때 현재 실행 상태가 콜스택에 추가되는데, 함수의 처리가 늦거나 완료되지 못하고 콜스택이 가득 찼을 때 해당 에러가 발생하게 됩니다. 주로 함수의 무한 재귀 호출 또는 순환 참조 등의 이유로 발생하며, 제 경우에는 순환 참조에 의해 발생했던 것으로 보입니다.
+![range_error.png](/images/nodejs-wrong-singleton.png)
+<br />
+
+#### 간단한 재현
+
+```javascript
+function hi(){
+    console.log(1);
+    return hi();
+}
+hi();
+```
+```bash
+node:internal/console/constructor:295
+        if (isStackOverflowError(e))
+            ^
+RangeError: Maximum call stack size exceeded
+    at console.value (node:internal/console/constructor:295:13)
+    at console.log (node:internal/console/constructor:374:26)
+```
+
+<MdxDivider />
+
+## 해결 방법
+#### 임시적인 해결
+프로젝트별로 시간할당은 한정적이었고, 수정하고 있는 팀원이 많은 공통 레거시 프로젝트였기에 코드 구조 개선을 당장에 진행할 수는 없었습니다.<br />
+따라서 임시방편으로 Controller 단에서 Service 인스턴스를 선언하여 CommonRepository 함수에 직접 주입하여 처리했습니다.
+```typescript
+import NewService from '/path/new_service';
+
+const newService = NewService.getInstance();
+
+module.exports = (router: Router) => {
+    router.post('/api/endpoint', async (request: Request, response: Response, next: NextFunction) => {
+        try {
+            const commonRepository = CommonRepository.getInstance();
+
+            await commonRepository.someFunction(newService);
+
+            return response.json({data: 'ok'});
+        } catch (error) {
+            next(error);
+        }
+    });
+}
+```
+
+<br />
+#### 서비스 코드 개선
+차후 ***inversify*** 라이브러리를 사용하여, 모든 것을 정상적인 싱글톤 패턴으로 구현완료 했습니다. 이 과정은 추후 포스팅에서 더 자세히 다뤄보겠습니다.
+
