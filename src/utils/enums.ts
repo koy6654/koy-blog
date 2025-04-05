@@ -13,8 +13,9 @@ export enum MdxFiles {
   MDX_TUTORIAL = 'mdx-tutorial',
 
   // BACKEND
-  TYPESCRIPT_FUNCTION_OVERLOADING = 'typescript-function-overloading',
-  TYPESCRIPT_DECORATOR = 'typescript-decorator',
+  NODEJS_FUNCTION_OVERLOADING = 'nodejs-function-overloading',
+  NODEJS_DECORATOR = 'nodejs-decorator',
+  NODEJS_WRONG_SINGLETON = 'nodejs-wrong-singleton',
 
   // INFRA
   DOCKER_KUBENETES_TUTORIAL = 'docker-kubenetes-install',
