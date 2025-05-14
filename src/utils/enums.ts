@@ -16,6 +16,8 @@ export enum MdxFiles {
   NODEJS_FUNCTION_OVERLOADING = 'nodejs-function-overloading',
   NODEJS_DECORATOR = 'nodejs-decorator',
   NODEJS_WRONG_SINGLETON = 'nodejs-wrong-singleton',
+  NODEJS_TRY_CATCH = 'nodejs-try-catch',
+  NODEJS_CONSTRUCTOR_FUNCTION = 'nodejs-constructor-function',
 
   // INFRA
   DOCKER_KUBENETES_TUTORIAL = 'docker-kubenetes-install',

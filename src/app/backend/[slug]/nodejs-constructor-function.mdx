@@ -1,0 +1,76 @@
+---
+id: 'nodejs-constructor-function'
+title: '[Node.js] 생성자 함수와 prototype의 개념'
+date: '2025-05-14'
+description: 'Node.js 환경에서 생성자 함수의 개념을 익혀보기'
+---
+
+# [Node.js] 생성자 함수와 prototype의 개념
+---
+<br />
+
+## 개요
+오래된 Npm 라이브러리 또는 레거시 코드를 살펴보다보면, 클래스처럼 사용되는 함수 패턴을 볼 수 있습니다.<br />
+이를 생성자 함수(Constructor function)라고 부르는데, 어떤 개념을 가지고 사용되었는지 확인해보겠습니다.
+
+<MdxDivider />
+
+## 생성자 함수란
+생성자 함수는 JavaScript의 기본 기능 중 하나로, 객체를 생성하기 위한 함수입니다.<br />
+Javascript에 Class가 도입되기 전까지는 생성자 함수를 이용해 객체 지향 방식으로 코드를 구성하는 것이 일반적이었으며, 함수의 형식은 아래와 같습니다.<br />
+```typescript
+function Test() {
+    this.test = 0;
+
+    this.initTest = function () {
+        this.test = 0;
+    };
+
+    this.setTest = function () {
+        this.test = 1;
+    };
+}
+
+const test = new Test();
+console.log(test.test); // 결과 값: 0
+
+test.setTest();
+console.log(test.test); // 결과 값: 1
+
+test.initTest();
+console.log(test.test); // 결과 값: 0
+```
+
+<MdxDivider />
+
+## prototype이란
+생성자 함수를 설명할때 ***prototype*** 의 설명이 꼭 필요합니다.<br />
+***prototype*** 이란 Javascript에서 함수와 객체 간의 상속, 메서드 공유를 가능하게 해주는 중요한 객체 속성입니다.<br />
+Javascript에서 함수를 생성하면 자동으로 prototype 속성이 생기고, 이 속성을 이용해 만든 객체는 상속을 받게 됩니다.<br />
+추가적으로, ***__proto__*** 와 ***Object.getPrototypeOf()*** 는 현재 객체의 부모 객체를 나타냅니다.<br />
+<br />
+추상적인 설명보다는 아래 예제를 보면 바로 이해할 수 있습니다.
+```javascript
+function Test() {
+  this.memo = null;
+
+  this.setMemo = function () {
+    this.memo = 'not null';
+  }
+}
+
+const test = new Test(); // test는 Test.prototype 를 상속받음
+
+console.log(test.memo); // null 출력
+
+test.setMemo();
+console.log(test.memo); // not null 출력
+
+console.log(Test.prototype === test.__proto__); // true 출력
+console.log(Test.prototype === Object.getPrototypeOf(test)); // true 출력
+```
+
+<MdxDivider />
+
+## 마무리
+자바스크립트에 Class 문법이 도입된 이후 생성자 함수 방식보다는 클래스 문법이 사실 더 일반적으로 사용되기 때문에, 해당 개념은 개발할때 보다는 레거시 코드나 공개된 npm 라이브러리를 읽을 때 유용하게 사용할 수 있을 것 같습니다.
