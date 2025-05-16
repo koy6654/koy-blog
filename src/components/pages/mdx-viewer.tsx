@@ -4,6 +4,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { getPostFileDataByName } from '@/utils/functions/gray-matter';
 import { MdxFiles } from '@/utils/enums';
+import remarkGfm from 'remark-gfm';
 
 export interface MdxViewerSlug {
   params: {
@@ -84,11 +85,35 @@ const MdxComponents = {
     />
   ),
   code: (props: React.HTMLAttributes<HTMLElement>) => (
-    <code className="bg-gray-200 p-1 rounded dark:bg-gray-700" {...props} />
+    <code
+      className="bg-[#ececec] text-[#0d0d0d] p-1 rounded dark:bg-[#424242] dark:text-[#FFFFFF]"
+      {...props}
+    />
   ),
   pre: (props: React.HTMLAttributes<HTMLElement>) => {
     return <CodeBlock>{props.children}</CodeBlock>;
   },
+  table: (props: React.HTMLAttributes<HTMLTableElement>) => (
+    <table
+      className="w-full border border-gray-300 dark:border-[#fff3] border-collapse text-sm mt-[10px] mb-[10px]"
+      {...props}
+    />
+  ),
+  thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => (
+    <thead className="bg-gray-100 dark:bg-[#2c2c2c]" {...props} />
+  ),
+  th: (props: React.HTMLAttributes<HTMLTableCellElement>) => (
+    <th
+      className="p-2 border border-gray-300 dark:border-[#fff3] font-semibold text-left"
+      {...props}
+    />
+  ),
+  td: (props: React.HTMLAttributes<HTMLTableCellElement>) => (
+    <td
+      className="p-2 border border-gray-200 dark:border-[#fff3] align-top"
+      {...props}
+    />
+  ),
   MdxDivider: (props: React.HTMLAttributes<HTMLDivElement>) => (
     <>
       <br />
@@ -109,7 +134,7 @@ async function MdxViewer({ page }: { page: MdxFiles }) {
       options={{
         parseFrontmatter: true,
         mdxOptions: {
-          remarkPlugins: [],
+          remarkPlugins: [remarkGfm],
           rehypePlugins: [],
         },
       }}

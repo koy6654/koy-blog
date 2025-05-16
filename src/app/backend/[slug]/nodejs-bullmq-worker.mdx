@@ -1,0 +1,248 @@
+---
+id: 'nodejs-bullmq-worker'
+title: '[Node.js] BullMQ를 활용해 Internal Job Worker 만들어보기'
+date: '2025-05-27'
+description: 'Cron 시간 패턴 기반의 안정적인 내부 작업 처리를 위한 큐 아키텍처 설계'
+---
+
+# BullMQ를 활용해 Internal Job Worker 만들어보기
+---
+<br />
+
+## 개요
+
+기존에 사용하던 cron 기반 스케줄링 작업들의 불안정성 문제를 해결하기 위해 오픈소스 솔루션들을 검토해보았습니다. 좋은 메세지큐는 많았으나 현재의 상황과 비용 측면 등을 고려했을때 BullMQ가 가장 적합하다고 판단하여 이를 활용한 아키텍처를 구현해보았고, 그 과정에서 알게 된 내용들을 이 포스팅에 정리했습니다.
+
+<MdxDivider />
+
+## BullMQ 구성 요소들
+
+#### Job
+이름, 데이터, 메타데이터 등을 포함하며 큐에 등록된 작업 단위이며 작업의 Payload 역할을 담당합니다.
+<br />
+
+#### Queue
+Job 을 등록하고 Redis에 저장하는 역할을 하며, 큐 이름 기반으로 Redis의 키가 구성됩니다.
+<br />
+
+#### Worker
+지정된 Queue 에서 Job 을 가져와 실제로 처리하는 역할을 담당합니다. 처리는 아래 Processor 함수를 통해 진행되며, 이벤트 처리도 담당합니다.
+<br />
+
+#### Processor
+지정된 Worker 가 Job 을 처리할 때 실행되는 실제 함수입니다. 비즈니스 로직, DB 작업 등이 포함됩니다.
+
+<MdxDivider />
+
+## 아키텍처 구조와 코드 분석/참조
+
+#### 디렉토리 구조
+Job, Queue, Worker 를 하나의 모듈로 구현했습니다. Processor 로직은 Worker 메서드에 포함시켰습니다.
+
+```
+├── common
+│   ├── common.repository.ts
+│   └── common.service.ts
+├── index.ts
+├── modules
+│   ├── payment
+│   │   ├── payment.job.ts
+│   │   ├── payment.queue.ts
+│   │   └── payment.worker.ts
+│   └── test
+│       ├── test.job.ts
+│       ├── test.queue.ts
+│       └── test.worker.ts
+├── utils
+│   ├── base.util.ts
+│   ├── constants.ts
+│   ├── pg-util.ts
+│   └── types.ts
+└── vendors
+    └── redis
+        └── redis.ts
+```
+<br />
+
+#### 구현 정리
+
+아키텍처는 Queue 생성 → obliterate → Worker 생성 → Job 생성 순으로 다음과 같이 구현했습니다.
+
+Job , Worker 의 생성에는 Queue 객체가 필요하고, Worker 는 BullMQ 코드 구조 상 선언될 시 processor 와 listener 가 실행되기 때문입니다.
+
+```tsx
+const bullMqWorkerQueues = await initQueues(redisClient);
+
+await cleanBullMqJobs(bullMqWorkerQueues);
+
+initWorkers(pgUtil, redisClient);
+
+await initJobs(pgUtil, bullMqWorkerQueues);
+```
+<br />
+
+#### 스케줄링 초기화 및 멱등성 보장
+
+위 구현 로직에서 **_obliterate_** 의 이유는 스케줄링 시간 초기화 때문입니다.
+예를 들어 \***_/5 _ \* \* \* \*\*** 같이 cron pattern으로 Job 을 생성했을때, 어플리케이션이 재부팅된다면 동일한 jobId에 대해 스케줄링 멱등성을 BullMq가 별도로 보장해주지 않습니다. 따라서 기존 스케줄링을 전부 제거하고 다시 스케줄링 하는 방식으로 맞다고 판단하여 **_obliterate_** 로 구현했습니다.
+
+다만, 주의할 점은 내부 스케줄링 Job이 반드시 그날 그 시간에 돌아야한다는 전제가 없어야합니다. 다음날 그 시간에 돌아도 된다는 전제가 있을때 위와 같이 **_obliterate_** 를 사용한 스케줄링 초기화를 사용할 수 있습니다.
+
+또한, BullMQ를 주기적인 Job을 처리하는 내부 스케줄링 워커로 쓰지 않고 gRPC + 외부로 부터 Job 을 처리하는 아키텍처를 만들 시에도 **_obliterate_** 방식의 초기화는 옳지 않은 방법입니다.
+
+```tsx
+const jobMessage = { jobId };
+const jobOptions = getBullMqJobOptions({
+  jobId,
+  repeat: {
+    pattern: '*/5 * * * * *',
+    immediately: false,
+  },
+});
+
+await this.queue.add(jobName, jobMessage, jobOptions);
+```
+
+또한, DB 를 활용해 **_Processor_** 의 멱등성 다음과 같이 보장합니다.
+
+```tsx
+export async function isExecuteJobByIdempotency(
+  pgUtil: PgUtil,
+  job: Job,
+): Promise<boolean> {
+  const jobId = getBullMqJobIdFromMessage(job);
+
+  let executeIdempotency = true;
+
+  // Job이 Processor에 의해 실행 시작된 시간
+  const jobProcessedOn = job?.processedOn;
+  if (jobProcessedOn == null) {
+    throw new Error('b8b57b4b-17be-5cbf-99f5-1606f4e2ab89');
+  }
+
+  // Job의 반복 주기
+  const jobRepeatPattern = job.opts?.repeat?.pattern;
+  if (jobRepeatPattern == null) {
+    throw new Error('56a51cee-2017-5b5e-8c29-d3c6939eff95');
+  }
+
+  // Job이 가장 최근 완료된 시간
+  const recentCompletedTime = await getBullMqWorkerHistoryRecentTime(
+    pgUtil,
+    jobId,
+  );
+  if (recentCompletedTime != null) {
+    // Job이 가장 최근 완료된 시간 + Job의 반복 주기 + 시스템 오차(1초)를 통해 현재 Job이 실행되어야 하는 시간을 구함
+    let nextExecuteTime = getNextExecuteTime(
+      jobRepeatPattern,
+      recentCompletedTime,
+    );
+    nextExecuteTime = dayjs(nextExecuteTime).subtract(1, 'seconds').toDate();
+
+    // Processor 실행 시간이 현재 Job이 실행되어야 하는 시간보다 크면 작업은 실행한다.
+    executeIdempotency = dayjs(jobProcessedOn).isAfter(nextExecuteTime);
+  } else {
+    executeIdempotency = true;
+  }
+
+  return executeIdempotency;
+}
+```
+
+<MdxDivider />
+
+## BullMQ 에 대한 이모저모 (v4.6.0)
+
+#### BullMQ 내부 코드 구조 요약
+**_Job, Queue, Worker_** 코드는 Typescript 를 이용해 **_job.ts, queue.ts, worker.ts_** 클래스로 구현되어 있습니다.
+Redis 제어는 Typescript(scripts.ts) 와 Python(scripts.py) + Lua-script(, \*.lua) 를 통해 Redis를 제어합니다.
+이 부분만 알고 있으면 BullMQ의 전체 코드 흐름을 빠르게 이해할 수 있습니다.
+<br />
+
+#### BullMQ Redis key 분석
+BullMQ는 Redis에 다음과 같은 key들을 생성하여 job을 관리합니다. 각 key의 종류 및 설명은 아래와 같습니다.
+| Key 형식                                   | 타입   | 설명                                                               |
+|-------------------------------------------|--------|--------------------------------------------------------------------|
+| `<prefix>:<queue>:events`                 | Stream | 이벤트 기록 (completed, failed, stalled 등)                        |
+| `<prefix>:<queue>:meta`                   | Hash   | Queue의 상세 정보 (최대 이벤트 개수, paused 여부, version 정보 등) |
+| `<prefix>:<queue>:id`                     | String | Job 생성 카운터 (Job 생성 시 자동 증가)                            |
+| `<prefix>:<queue>:repeat`                 | ZSet   | 반복 Job 관리 리스트                                               |
+| `<prefix>:<queue>:repeat:<hash>:<ts>`     | Hash   | 반복 패턴에 따라 스케줄링 되어 있는 작업들                         |
+| `<prefix>:<queue>:completed`              | ZSet   | 완료된 Job 리스트                                                  |
+| `<prefix>:<queue>:failed`                 | ZSet   | 실패한 Job 리스트                                                  |
+| `<prefix>:<queue>:active`                 | List   | 현재 처리 중인 Job 대기열                                          |
+| `<prefix>:<queue>:wait`                   | List   | 처리 대기 **중인** Job 대기열 (FIFO)                                |
+| `<prefix>:<queue>:delayed`                | ZSet   | 예약되어 있는 Job 대기열                                           |
+<br />
+
+#### 중복등록방지
+생성 주기가 2초인 Job 과 처리가 10초 걸리는 Processor 가 있을때, Processor 가 처리 로직을 실행하는 동안 같은 jobId에 대해 Job 은 계속해서 쌓이지 않습니다.
+<br />
+
+#### drain vs obliterate
+공식문서에 둘의 자세한 차이가 표시되어 있지 않아 BullMQ Lua script를 직접 확인한 결과, 아래 suffix key 관련 데이터를 삭제한다는 차이점을 가집니다.
+
+**_drain_**
+→ wait, paused, delayed, prioritized
+
+**_obliterate_**
+→ wait, paused, delayed, prioritized, :lock, completed, paused, failed, events, delay, stalled-check, stalled, id, pc, meta, repeat, metrics:completed, metrics:completed:data, metrics:failed, metrics:failed:data
+<br />
+
+#### BullMQ 내부 에러 핸들링
+외부 라이브러리 사용에 예민한 편이라면, Job repeat 옵션에 cron pattern을 쓰는 것에 대한 validation 핸들링이 있으면 좋을 것 같습니다.
+아래는 cron-parser를 사용하는 BullMQ의 코드인데, 잘못된 string이 들어오면 parseExpression에서 터지고 에러 핸들링이 따로 되지 않는 것을 확인할 수 있기 때문입니다.
+
+```tsx
+const interval = parseExpression(pattern, {
+  ...opts,
+  currentDate,
+});
+
+try {
+  return interval.next().getTime();
+} catch (e) {
+  // Ignore error
+}
+```
+
+Worker 에 주입되는 Processor 의 예외 처리는 이미 아래 로직을 통해 try..catch 로 감싸져 있으며, failed 이벤트 리스너로 전송되도록 설계되어 있습니다. 따라서 Processor 의 예외 처리가 필수는 아닙니다.
+
+```tsx
+try {
+  jobsInProgress.add(inProgressItem);
+  const result = await this.callProcessJob(job, token);
+  return await handleCompleted(result);
+} catch (err) {
+  return handleFailed(<Error>err);
+} finally {
+  jobsInProgress.delete(inProgressItem);
+}
+```
+
+Worker의 listener 예외 처리는 아래 로직을 통해 try..catch 로 감싸져 있으며, 만약 error listener 가 없는 등의 emit 에러가 발생한다면 console.error 를 찍고 끝납니다.
+
+```tsx
+  emit(event: string | symbol, ...args: any[]): boolean {
+    try {
+      return super.emit(event, ...args);
+    } catch (err) {
+      try {
+        return super.emit('error', err);
+      } catch (err) {
+        // We give up if the error event also throws an exception.
+        console.error(err);
+        return false;
+      }
+    }
+  }
+```
+
+<MdxDivider />
+
+## 코드 참조
+
+위 내용을 토대로 설계한 BullMq 내부 스케줄링 워커입니다.
+
+[코드 바로가기](https://github.com/koy6654/bullmq-worker)
+

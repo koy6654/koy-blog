@@ -18,6 +18,7 @@ export enum MdxFiles {
   NODEJS_WRONG_SINGLETON = 'nodejs-wrong-singleton',
   NODEJS_TRY_CATCH = 'nodejs-try-catch',
   NODEJS_CONSTRUCTOR_FUNCTION = 'nodejs-constructor-function',
+  NODEJS_BULLMQ_WORKER = 'nodejs-bullmq-worker',
 
   // INFRA
   DOCKER_KUBENETES_TUTORIAL = 'docker-kubenetes-install',
