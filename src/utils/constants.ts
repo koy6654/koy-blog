@@ -4,3 +4,10 @@ export const DARK_THEME = 'dark';
 export const LIGHT_THEME = 'light';
 
 export const NAVBAR_ICON_SIZE = '28';
+
+export const Pages = {
+  CAREER: 'career',
+  FRONTEND: 'frontend',
+  BACKEND: 'backend',
+  INFRA: 'infra',
+} as const;

@@ -1,14 +1,13 @@
 'use client';
 
 import Divider from '@components/ui/divider';
-import { Pages } from '@/utils/enums';
 import { uppercaseFirstLetter } from '@/utils/functions/base';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
-import { PageCounts } from '@/app/api/mdx-count/route';
-import { getPageCounts } from '@/utils/services';
-import { LoadingContent, LoadingSidebar } from '@components/ui/loading';
+import { useEffect, useState } from 'react';
+import { getMdxCount } from '@/utils/requests';
+import { Pages } from '@/utils/constants';
+import { PageCounts } from '@/utils/types';
 
 function Sidebar() {
   const currentPage = usePathname();
@@ -17,7 +16,7 @@ function Sidebar() {
   const pages = Object.values(Pages);
 
   const getPosts = async (): Promise<void> => {
-    const result = await getPageCounts();
+    const result = await getMdxCount();
     setPageCounts(result);
   };
 

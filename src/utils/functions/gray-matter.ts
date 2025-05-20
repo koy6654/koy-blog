@@ -27,6 +27,7 @@ export function getPostFilePaths(target?: string): string[] {
   const postPaths: string[] = sync(
     `${postsDirectory}${targetDirectory}/**/*.mdx`,
   );
+
   return postPaths;
 }
 
@@ -39,30 +40,19 @@ export function getPostFilePath(fileName: MdxFiles): string {
   return postPaths[0];
 }
 
-export function getPostFileDatas(): PostFileData[] {
-  const filesPaths = getPostFilePaths();
-
-  const posts = filesPaths.map((filePath) => {
-    const markdownWithMeta = fs.readFileSync(filePath, 'utf-8');
-
-    const { data, content }: GrayMatterFile<string> = matter(markdownWithMeta);
-
-    return { data: data as GrayMatterData, content };
-  });
-
-  return posts;
-}
-
-export function getPostFileDataByName(fileName: MdxFiles): PostFileData {
-  const filePath = getPostFilePath(fileName);
-  const postFileData = getPostFileDataByPath(filePath);
-
-  return postFileData;
-}
-
-export function getPostFileDataByPath(filePath: string): PostFileData {
-  const markdownWithMeta = fs.readFileSync(filePath, 'utf-8');
+export async function getPostFileDataByPath(
+  filePath: string,
+): Promise<PostFileData> {
+  const markdownWithMeta = await fs.promises.readFile(filePath, 'utf-8');
   const { data, content }: GrayMatterFile<string> = matter(markdownWithMeta);
 
   return { data: data as GrayMatterData, content };
+}
+
+export async function getPostFileDataByName(
+  fileName: MdxFiles,
+): Promise<PostFileData> {
+  const filePath = getPostFilePath(fileName);
+
+  return await getPostFileDataByPath(filePath);
 }

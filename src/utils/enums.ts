@@ -1,10 +1,3 @@
-export enum Pages {
-  CAREER = 'career',
-  FRONTEND = 'frontend',
-  BACKEND = 'backend',
-  INFRA = 'infra',
-}
-
 export enum MdxFiles {
   // CAREER
   CAREER = 'career',

@@ -1,4 +1,4 @@
-import { Pages } from '@/utils/enums';
+import { Pages } from '@/utils/constants';
 import { redirect } from 'next/navigation';
 
 export default function Home() {

@@ -1,36 +1,14 @@
+'use client';
+
 import { PostPreview } from '@/components/pages/post-preview';
-import { Pages } from '@/utils/enums';
-import {
-  getPostFileDataByPath,
-  getPostFilePaths,
-} from '@/utils/functions/gray-matter';
-import Link from 'next/link';
+import { Pages } from '@/utils/constants';
 
-function InfraPage() {
-  const paths = getPostFilePaths(Pages.INFRA);
-
-  const postFileDatas = paths
-    .map((path) => {
-      return getPostFileDataByPath(path);
-    })
-    .sort((a, b) => b.data.date.localeCompare(a.data.date));
-
+function ReactPage() {
   return (
-    <div>
-      <main className="flex flex-col p-10 sm:p-20">
-        {postFileDatas.map((file, index) => (
-          <Link key={index} href={`/${Pages.INFRA}/${file.data.id}`} passHref>
-            <PostPreview
-              key={index}
-              date={file.data.date}
-              title={file.data.title}
-              description={file.data.description}
-            ></PostPreview>
-          </Link>
-        ))}
-      </main>
-    </div>
+    <main className="flex flex-col">
+      <PostPreview page={Pages.INFRA} />
+    </main>
   );
 }
 
-export default InfraPage;
+export default ReactPage;

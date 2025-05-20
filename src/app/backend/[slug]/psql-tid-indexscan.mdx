@@ -1,0 +1,209 @@
+---
+id: 'psql-tid-indexscan'
+title: '[PostgreSQL] TID의 개념과 자주 접하는 Index scan 종류에 대해 알아보기'
+date: '2025-05-30'
+description: 'PostgreSQL 로 슬로우 쿼리를 처리하면서 자주 접한 Index scan 종류와 결과 행을 이루는 TID의 개념 알아보기'
+---
+
+# [PostgreSQL] TID의 개념과 자주 접하는 Index scan 종류에 대해 알아보기
+---
+<br />
+
+## 개요
+
+성능이 저하된 슬로우 쿼리를 개선하는 과정에서 인덱스 스캔과 쿼리 실행 방식에 대해 자주 접하게 되었습니다. 처음에는 인덱스가 걸려있지 않은 쿼리를 찾아 인덱스를 거는 간단한 작업 위주로 진행했으나, 작업이 진행될 수록 더 효율적인 인덱스와 쿼리 방식에 대해 탐구하게 되었습니다. 이에 따라 진행 과정 중 알게 된 내용들을 포스팅해 두려고 합니다.
+
+<MdxDivider />
+
+## TID와 MVCC란
+#### TID
+
+PostgreSQL의 테이블은 여러 개의 페이지 단위로 구성되며, 한 페이지에는 여러 개의 Tuple이 저장됩니다. Tuple은 테이블의 하나의 행(Row, Record) 을 의미하며, 단순한 데이터 집합이 아니라 `MVCC` 를 위한 메타데이터를 포함한 구조체입니다.
+그리고 `TID` 는 Tuple Identifier 의 줄임말로 특정 행의 위치를 (page_number, tuple_offset) 형식으로 나타내며, 이 값은 `ctid` 라는 시스템 컬럼으로 노출됩니다.<br />
+<br />
+
+#### MVCC
+
+MVCC는 다중 버전 동시성 제어의 줄임말로 데이터를 수정할 때 기존 데이터를 덮어쓰지 않고, 새로운 버전을 생성하여 저장하는 방식을 뜻합니다. 이를 통해 여러 트랜잭션이 동시에 접근하더라도 일관된 읽기와 높은 동시성을 유지할 수 있습니다.
+
+PostgreSQL에서의 MVCC는 다음과 같은 방식으로 동작합니다.
+
+- **INSERT**: 새로운 tuple 생성
+- **UPDATE**: 기존 tuple은 **삭제된 것으로 표시**, 새로운 tuple 생성
+- **DELETE**: tuple은 즉시 삭제되지 않고 **삭제 예정으로 표시**
+
+이러한 방식으로 이전 버전의 데이터도 함께 보관되기 때문에, 각 트랜잭션은 자신이 시작된 시점의 상태를 기준으로 데이터를 읽을 수 있습니다.
+
+<MdxDivider />
+
+## Index Scan 종류 및 설명
+
+#### TID Scan
+
+TID 를 직접 사용하여 특정 Tuple 을 직접 읽는 스캔 방식입니다.
+TID를 이용하여 직접 스캔하기에 매우 빠르고 인덱스를 사용하지 않는다는 특징이 있으며, 예제는 아래와 같습니다.<br />
+<br />
+**(예제) 테이블 상태**
+```sql
+--------+------+----------+----------+-------------------
+ id     | uuid |          | not null | gen_random_uuid()
+ name   | text |          |          |
+ email  | text |          |          |
+인덱스들:
+    "test_pkey" PRIMARY KEY, btree (id)
+```
+
+**(예제) 쿼리 실행**
+```sql
+# 쿼리 및 결과
+SELECT ctid, * FROM test WHERE name = 'Larry Reichert';
+   ctid   |                  id                  |      name       |       email
+----------+--------------------------------------+-----------------+-------------------
+ (789,54) | ffe5b930-cd3b-4d8a-9d90-e3609ec3fa04 | Larry Reichert  | Tyree49@gmail.com
+
+
+# 쿼리 및 결과
+EXPLAIN ANALYZE SELECT ctid, * FROM test WHERE ctid = '(789,54)';
+-----------------------------------------------------------------------------------------------
+ Tid Scan on test  (cost=0.00..4.01 rows=1 width=61) (actual time=0.015..0.016 rows=1 loops=1)
+   TID Cond: (ctid = '(789,54)'::tid)
+ Planning Time: 0.153 ms
+ Execution Time: 0.036 ms
+```
+<br />
+
+#### Bitmap Index Scan & Bitmap Heap Scan
+
+**Bitmap Index Scan**
+
+인덱스를 사용하여 특정 조건을 만족하는 행들의 TID 목록을 비트맵 형태로 메모리에 저장하며 단독으로 쓰이진 않습니다. 주로 `OR 조건, IN 조건, 범위 조건` 등에서 볼 수 있으며 대용량 데이터 조회 시 효율적인 검색이 가능합니다.
+<br />
+
+**Bitmap Heap Scan**
+
+`Bitmap Index Scan` 과 같은 인덱스 스캔을 통해 수집한 TID 목록을 이용해 `Heap(실제 테이블)` 의 페이지를 읽고 해당하는 Row를 반환하는 작업입니다. 여러 개의 인덱스 검색 결과를 결합 가능하여 유연성이 좋지만 비트맵을 메모리에 유지해야 하므로, 매우 큰 데이터셋에서는 성능 저하가 일어날 수 있다는 단점이 있습니다.
+
+즉, PostgreSQL은 Bitmap Index Scan을 통해 TID 목록을 가져오고, 가져온 TID 목록을 이용해 Bitmap Heap Scan 사용하여 한 번에 데이터를 읽으며, 예제는 아래와 같습니다.
+<br />
+**(예제) 테이블 상태**
+```sql
+--------+------+----------+----------+-------------------
+ id     | uuid |          | not null | gen_random_uuid()
+ name   | text |          |          |
+ email  | text |          |          |
+인덱스들:
+    "test_pkey" PRIMARY KEY, btree (id)
+    "test_idx" btree (name)
+```
+
+**(예제) 쿼리 실행**
+```sql
+# 쿼리 및 결과
+EXPLAIN ANALYZE SELECT id, name, email FROM test WHERE name IN ('Larry Reichert', 'Janet Feest-Dach');
+-----------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on test  (cost=8.85..16.64 rows=2 width=55) (actual time=0.059..0.063 rows=2 loops=1)
+   Recheck Cond: (name = ANY ('{"Larry Reichert","Janet Feest-Dach"}'::text[]))
+   Heap Blocks: exact=2
+   ->  Bitmap Index Scan on test_idx  (cost=0.00..8.85 rows=2 width=0) (actual time=0.047..0.047 rows=2 loops=1)
+         Index Cond: (name = ANY ('{"Larry Reichert","Janet Feest-Dach"}'::text[]))
+ Planning Time: 0.262 ms
+ Execution Time: 0.106 ms
+```
+<br />
+
+#### Index Scan
+
+인덱스를 순차적으로 탐색하며, 조건을 만족하는 Row에 직접 접근하여 데이터를 가져오는 방식입니다.
+
+정확한 키 값 또는 특정 조건에서는 매우 효율적이지만, 조건이 많아질 경우 `Bitmap Index + Heap Scan` 보다 성능이 떨어질 수 있습니다. 예제는 아래와 같습니다.
+<br />
+**(예제) 테이블 상태**
+```sql
+--------+------+----------+----------+-------------------
+ id     | uuid |          | not null | gen_random_uuid()
+ name   | text |          |          |
+ email  | text |          |          |
+인덱스들:
+    "test_pkey" PRIMARY KEY, btree (id)
+    "test_idx" btree (name)
+```
+
+**(예제) 쿼리 실행**
+```sql
+# 쿼리 및 결과
+EXPLAIN ANALYZE SELECT id, name, email FROM test WHERE name = 'Larry Reichert';
+----------------------------------------------------------------------------------------------------------------
+ Index Scan using test_idx on test  (cost=0.42..8.44 rows=1 width=55) (actual time=0.099..0.102 rows=1 loops=1)
+   Index Cond: (name = 'Larry Reichert'::text)
+ Planning Time: 0.230 ms
+ Execution Time: 0.168 ms
+```
+<br />
+
+#### Index Only Scan
+
+Index Scan과 유사하지만, 테이블을 읽지 않고 인덱스에서 직접 데이터를 가져오는 방식입니다.
+
+속도도 매우 빠르고 여러모로 효율적이지만 SELECT에서 조회하는 모든 컬럼과 사용하는 WHERE 조건들이 모두 인덱스에 포함되어 있어야 합니다. 또한, `Visibility map` 이 최신 상태여야 최적 성능 발휘한다는 제약사항이 있습니다. 예제는 아래와 같습니다.
+<br />
+**(예제) 테이블 상태**
+```sql
+--------+------+----------+----------+-------------------
+ id     | uuid |          | not null | gen_random_uuid()
+ name   | text |          |          |
+ email  | text |          |          |
+인덱스들:
+    "test_pkey" PRIMARY KEY, btree (id)
+    "test_idx" btree (name)
+```
+
+**(예제) 쿼리 실행**
+```sql
+# 쿼리 및 결과
+EXPLAIN ANALYZE SELECT name FROM test WHERE name = 'Larry Reichert';
+---------------------------------------------------------------------------------------------------------------------
+ Index Only Scan using test_idx on test  (cost=0.42..4.44 rows=1 width=15) (actual time=0.046..0.049 rows=1 loops=1)
+   Index Cond: (name = 'Larry Reichert'::text)
+   Heap Fetches: 0
+ Planning Time: 0.169 ms
+ Execution Time: 0.083 ms
+```
+<br />
+
+#### Sequential Scan
+
+테이블의 모든 행을 처음부터 끝까지 읽는 방식으로 WHERE 절이 없거나, 인덱스가 없는 상태에서 특정 행을 조회할 때 등의 경우 사용됩니다. 불필요한 데이터까지 읽기 때문에 대량 데이터에서는 비효율적이지만 테이블이 작을 때 인덱스 스캔보다 빠를 수 있습니다. 예제는 아래와 같습니다.
+<br />
+**(예제) 테이블 상태**
+```sql
+--------+------+----------+----------+-------------------
+ id     | uuid |          | not null | gen_random_uuid()
+ name   | text |          |          |
+ email  | text |          |          |
+인덱스들:
+    "test_pkey" PRIMARY KEY, btree (id)
+```
+
+**(예제) 쿼리 실행**
+```sql
+# 쿼리 및 결과
+EXPLAIN ANALYZE SELECT name FROM test WHERE name = 'Larry Reichert';
+----------------------------------------------------------------------------------------------------
+ Seq Scan on test  (cost=0.00..2788.91 rows=1 width=15) (actual time=27.906..28.425 rows=1 loops=1)
+   Filter: (name = 'Larry Reichert'::text)
+   Rows Removed by Filter: 119832
+ Planning Time: 0.507 ms
+ Execution Time: 28.445 ms
+```
+
+<MdxDivider />
+
+## 요약 및 결론
+
+결과를 간단하게 요약하자면, 다음과 같습니다.
+
+Bitmap Heap Scan + Bitmap Index Scan 은 대량 데이터 검색 (범위 조건, OR 조건) 시 효율적입니다.
+
+Index Scan 은 정확한 키 값을 통한 소량 데이터 검색 시 효율적입니다.
+
+그리고 테이블이 작은 경우 가끔 Sequential Scan 이 더 빠를 수도 있습니다.

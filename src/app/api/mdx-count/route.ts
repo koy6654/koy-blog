@@ -1,9 +1,6 @@
-import { Pages } from '@/utils/enums';
+import { Pages } from '@/utils/constants';
 import { getPostFilePaths } from '@/utils/functions/gray-matter';
-
-export type PageCounts = {
-  [K in Pages]: number;
-};
+import { PageCounts } from '@/utils/types';
 
 export async function GET() {
   try {

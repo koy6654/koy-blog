@@ -1,8 +1,13 @@
 'use client';
 
 import Skeleton from '@components/ui/skeleton';
+import { useEffect } from 'react';
 
 const LoadingContent = () => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="flex flex-col justify-start items-center h-screen">
       <div className="w-full rounded-lg shadow-lg">

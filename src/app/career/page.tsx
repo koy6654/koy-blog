@@ -1,6 +1,6 @@
 import { LoadingContent } from '@/components/ui/loading';
+import { MdxFiles } from '@/utils/enums';
 import { MdxViewer } from '@components/pages/mdx-viewer';
-import { MdxFiles } from '@utils/enums';
 import { Suspense } from 'react';
 
 async function CareerMdxViewerPage() {
