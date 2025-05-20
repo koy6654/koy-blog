@@ -125,7 +125,7 @@ const MdxComponents = {
   ),
 };
 
-async function MdxViewer({ page }: { page: MdxFiles }) {
+export async function MdxViewer({ page }: { page: MdxFiles }) {
   const post = getPostFileDataByName(page);
 
   return (
@@ -142,5 +142,3 @@ async function MdxViewer({ page }: { page: MdxFiles }) {
     />
   );
 }
-
-export default MdxViewer;

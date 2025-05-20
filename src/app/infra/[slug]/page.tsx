@@ -1,4 +1,4 @@
-import MdxViewer, { MdxViewerSlug } from '@/components/pages/mdx-viewer';
+import { MdxViewer, MdxViewerSlug } from '@/components/pages/mdx-viewer';
 import { Suspense } from 'react';
 import { LoadingContent } from '@/components/ui/loading';
 

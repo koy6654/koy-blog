@@ -4,7 +4,7 @@ interface PostPreviewProps {
   description: string;
 }
 
-const PostPreview = ({ date, title, description }: PostPreviewProps) => {
+export const PostPreview = ({ date, title, description }: PostPreviewProps) => {
   return (
     <div className="w-full h-full p-4">
       <div className="border border-gray-300 rounded-lg shadow-lg p-6 hover:bg-gray-300 active:bg-gray-400 dark:hover:bg-gray-600 dark:active:bg-gray-700 transition-shadow duration-300">
@@ -15,5 +15,3 @@ const PostPreview = ({ date, title, description }: PostPreviewProps) => {
     </div>
   );
 };
-
-export default PostPreview;

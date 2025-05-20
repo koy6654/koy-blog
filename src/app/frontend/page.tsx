@@ -1,4 +1,4 @@
-import PostPreview from '@/components/pages/post-preview';
+import { PostPreview } from '@/components/pages/post-preview';
 import { Pages } from '@/utils/enums';
 import {
   getPostFileDataByPath,
