@@ -3,7 +3,7 @@
 import Skeleton from '@components/ui/skeleton';
 import { useEffect } from 'react';
 
-const LoadingContent = () => {
+export const LoadingContent = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
@@ -20,7 +20,9 @@ const LoadingContent = () => {
           <Skeleton className="h-40 w-full rounded-md mb-4" />
         </div>
 
-        <Skeleton className="h-8 w-1/3 mx-auto" />
+        <Skeleton className="h-6 w-full mb-4" />
+        <Skeleton className="h-6 w-full mb-4" />
+        <Skeleton className="h-6 w-full mb-4" />
       </div>
     </div>
   );
@@ -28,7 +30,7 @@ const LoadingContent = () => {
 
 const LoadingSidebar = () => {
   return (
-    <div className="flex flex-col justify-start items-center h-screen bg-white">
+    <div className="flex flex-col justify-start items-center h-screen">
       <Skeleton className="h-8 w-full mb-3 rounded-md" />
       <Skeleton className="h-8 w-full mb-3 rounded-md" />
       <Skeleton className="h-8 w-full mb-3 rounded-md" />
@@ -37,4 +39,19 @@ const LoadingSidebar = () => {
   );
 };
 
-export { LoadingContent, LoadingSidebar };
+export const LoadingMdxList = () => {
+  return (
+    <div className="flex flex-col justify-start items-center h-screen">
+      <div className="w-full rounded-lg shadow-lg p-4">
+        <Skeleton className="w-full h-36 mb-8" />
+        <Skeleton className="w-full h-36 mb-8" />
+        <Skeleton className="w-full h-36 mb-8" />
+        <Skeleton className="w-full h-36 mb-8" />
+        <Skeleton className="w-full h-36 mb-8" />
+        <Skeleton className="w-full h-36 mb-8" />
+        <Skeleton className="w-full h-36 mb-8" />
+        <Skeleton className="w-full h-36 mb-8" />
+      </div>
+    </div>
+  );
+};

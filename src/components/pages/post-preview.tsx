@@ -1,6 +1,6 @@
 'use client';
 
-import { LoadingContent } from '@/components/ui/loading';
+import { LoadingContent, LoadingMdxList } from '@/components/ui/loading';
 import { PostFileData } from '@/utils/functions/gray-matter';
 import { getMdxList } from '@/utils/requests';
 import { useEffect, useState } from 'react';
@@ -16,7 +16,8 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
   const router = useRouter();
 
   const [postFileDatas, setPostFileDatas] = useState<PostFileData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMdxList, setIsLoadingMdxList] = useState(true);
+  const [isLoadingMdxContent, setIsLoadingMdxContent] = useState(false);
 
   useEffect(() => {
     const fetchMdxList = async (): Promise<void> => {
@@ -25,20 +26,29 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
     };
 
     fetchMdxList();
+    setIsLoadingMdxList(false);
   }, []);
 
   const handleClick = (path: string) => {
-    setIsLoading(true);
+    setIsLoadingMdxContent(true);
 
     setTimeout(() => {
       router.push(path);
-    }, 0.5 * 1000);
+    }, 0.2 * 1000);
   };
 
-  if (isLoading) {
+  if (isLoadingMdxContent) {
     return (
       <main className="max-w-[940px] flex flex-col p-10 sm:p-20">
         <LoadingContent />
+      </main>
+    );
+  }
+
+  if (isLoadingMdxList) {
+    return (
+      <main className="max-w-[940px] flex flex-col p-10 sm:p-20">
+        <LoadingMdxList />
       </main>
     );
   }
