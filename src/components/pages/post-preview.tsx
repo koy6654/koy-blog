@@ -5,7 +5,6 @@ import { PostFileData } from '@/utils/functions/gray-matter';
 import { getMdxList } from '@/utils/requests';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pages } from '@/utils/constants';
 import { PagesType } from '@/utils/types';
 
 interface PostPreviewProps {
@@ -29,26 +28,32 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
     setIsLoadingMdxList(false);
   }, []);
 
+  useEffect(() => {
+    if (postFileDatas.length !== 0) {
+      setIsLoadingMdxList(false);
+    }
+  }, [postFileDatas]);
+
   const handleClick = (path: string) => {
     setIsLoadingMdxContent(true);
 
     setTimeout(() => {
       router.push(path);
-    }, 0.2 * 1000);
+    }, 0.1 * 1000);
   };
-
-  if (isLoadingMdxContent) {
-    return (
-      <main className="max-w-[940px] flex flex-col p-10 sm:p-20">
-        <LoadingContent />
-      </main>
-    );
-  }
 
   if (isLoadingMdxList) {
     return (
       <main className="max-w-[940px] flex flex-col p-10 sm:p-20">
         <LoadingMdxList />
+      </main>
+    );
+  }
+
+  if (isLoadingMdxContent) {
+    return (
+      <main className="max-w-[940px] flex flex-col p-10 sm:p-20">
+        <LoadingContent />
       </main>
     );
   }
