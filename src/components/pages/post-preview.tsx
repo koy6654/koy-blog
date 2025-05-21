@@ -25,7 +25,6 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
     };
 
     fetchMdxList();
-    setIsLoadingMdxList(false);
   }, []);
 
   useEffect(() => {
