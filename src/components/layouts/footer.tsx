@@ -1,6 +1,6 @@
 import '@styles/layout.css';
 
-function Footer() {
+export function Footer() {
   return (
     <footer className="navbar-footer justify-center">
       <div className="mb-2 text-center">
@@ -11,5 +11,3 @@ function Footer() {
     </footer>
   );
 }
-
-export default Footer;

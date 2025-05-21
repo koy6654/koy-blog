@@ -6,26 +6,60 @@ import { getMdxList } from '@/utils/requests';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PagesType } from '@/utils/types';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@components/ui/pagination';
+import BigNumber from 'bignumber.js';
 
 interface PostPreviewProps {
   page: PagesType;
 }
 
 export const PostPreview = ({ page }: PostPreviewProps) => {
+  const pageLimit = 5;
+  const pageGroupLimit = 5;
+
   const router = useRouter();
 
   const [postFileDatas, setPostFileDatas] = useState<PostFileData[]>([]);
+
+  const [cursor, setCursor] = useState<number>(1);
+  const [currentPageNumber, setCurrentPageNumber] = useState<number>(0);
+  const [currentPageGroup, setCurrentPageGroup] = useState<number>(0);
+  const [totalPageGroup, setTotalPageGroup] = useState<number>(0);
+
   const [isLoadingMdxList, setIsLoadingMdxList] = useState(true);
   const [isLoadingMdxContent, setIsLoadingMdxContent] = useState(false);
 
   useEffect(() => {
     const fetchMdxList = async (): Promise<void> => {
-      const result = await getMdxList(page);
-      setPostFileDatas(result);
+      const result = await getMdxList(page, cursor, pageLimit);
+      const total = result.total;
+      const files = result.files;
+
+      setPostFileDatas(files);
+
+      const totalPages = new BigNumber(total).dividedBy(pageLimit).integerValue(BigNumber.ROUND_CEIL).toNumber();
+
+      const currentGroup = new BigNumber(cursor - 1).dividedToIntegerBy(pageGroupLimit).toNumber();
+
+      const totalGroups = new BigNumber(totalPages)
+        .dividedBy(pageGroupLimit)
+        .integerValue(BigNumber.ROUND_CEIL)
+        .toNumber();
+
+      setCurrentPageNumber(totalPages);
+      setCurrentPageGroup(currentGroup);
+      setTotalPageGroup(totalGroups);
     };
 
     fetchMdxList();
-  }, []);
+  }, [cursor]);
 
   useEffect(() => {
     if (postFileDatas.length !== 0) {
@@ -83,6 +117,39 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
           </div>
         );
       })}
+
+      <Pagination className="pt-8">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              onClick={() => setCursor((currentPageGroup - 1) * pageGroupLimit + 1)}
+              showIcon={currentPageGroup > 0}
+            />
+          </PaginationItem>
+
+          {Array.from({ length: pageGroupLimit }).map((_, index) => {
+            const startPage = currentPageGroup * pageGroupLimit + 1;
+            const pageNumber = startPage + index;
+
+            if (pageNumber > currentPageNumber) return null;
+
+            return (
+              <PaginationItem key={pageNumber}>
+                <PaginationLink isActive={pageNumber === cursor} onClick={() => setCursor(pageNumber)}>
+                  {pageNumber}
+                </PaginationLink>
+              </PaginationItem>
+            );
+          })}
+
+          <PaginationItem>
+            <PaginationNext
+              onClick={() => setCursor((currentPageGroup + 1) * pageGroupLimit + 1)}
+              showIcon={currentPageGroup < totalPageGroup - 1}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </main>
   );
 };

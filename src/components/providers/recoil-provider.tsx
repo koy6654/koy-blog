@@ -7,8 +7,6 @@ interface RecoilProviderProps {
   children: React.ReactNode;
 }
 
-const RecoilProvider = ({ children }: RecoilProviderProps) => {
+export const RecoilProvider = ({ children }: RecoilProviderProps) => {
   return <RecoilRoot>{children}</RecoilRoot>;
 };
-
-export default RecoilProvider;

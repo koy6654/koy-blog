@@ -1,6 +1,6 @@
 import { MdxViewer, MdxViewerSlug } from '@/components/pages/mdx-viewer';
 
-async function ReactMdxViewerPage({ params }: MdxViewerSlug) {
+async function BackendMdxViewerPage({ params }: MdxViewerSlug) {
   const page = params.slug;
 
   return (
@@ -12,4 +12,4 @@ async function ReactMdxViewerPage({ params }: MdxViewerSlug) {
   );
 }
 
-export default ReactMdxViewerPage;
+export default BackendMdxViewerPage;

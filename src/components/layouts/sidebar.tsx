@@ -1,6 +1,6 @@
 'use client';
 
-import Divider from '@components/ui/divider';
+import { Divider } from '@components/ui/divider';
 import { uppercaseFirstLetter } from '@/utils/functions/base';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -9,7 +9,7 @@ import { getMdxCount } from '@/utils/requests';
 import { Pages } from '@/utils/constants';
 import { PageCounts } from '@/utils/types';
 
-function Sidebar() {
+export function SideBar() {
   const currentPage = usePathname();
 
   const [pageCounts, setPageCounts] = useState<PageCounts | null>(null);
@@ -25,7 +25,7 @@ function Sidebar() {
   }, []);
 
   return (
-    <aside className="min-w-[250px] h-full sticky top-0 hidden overflow-hidden sm:block pt-24">
+    <aside className="min-w-[250px] h-full sticky top-0 hidden overflow-hidden sm:block py-24">
       <div className="w-full h-full flex flex-row">
         <div className="flex flex-col justify-end items-center flex-grow">
           <h2 className="text-lg font-bold pb-2">Menu</h2>
@@ -37,16 +37,9 @@ function Sidebar() {
 
                 return (
                   <li key={page}>
-                    <Link
-                      href={endpoint}
-                      className={`sidebar-block ${isActive ? 'sidebar-is-active' : ''}`}
-                    >
+                    <Link href={endpoint} className={`sidebar-block ${isActive ? 'sidebar-is-active' : ''}`}>
                       {uppercaseFirstLetter(page)}{' '}
-                      {pageCounts == null ? (
-                        <>&nbsp;&nbsp;&nbsp;&nbsp;</>
-                      ) : (
-                        <>({pageCounts[page]})</>
-                      )}
+                      {pageCounts == null ? <span className="inline-block w-8" /> : <>({pageCounts[page]})</>}
                     </Link>
                   </li>
                 );
@@ -59,5 +52,3 @@ function Sidebar() {
     </aside>
   );
 }
-
-export default Sidebar;

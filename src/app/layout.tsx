@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
+import { RecoilProvider } from '@/components/providers/recoil-provider';
+import { ThemeProvider } from '@/components/providers/theme-provider';
 import localFont from 'next/font/local';
 import '@app/globals.css';
 import React from 'react';
-import ThemeProvider from '@/components/providers/theme-provider';
-import NavBar from '@/components/layouts/navbar';
-import SideBar from '@/components/layouts/sidebar';
-import AdBar from '@/components/layouts/adbar';
-import Footer from '@/components/layouts/footer';
-import Divider from '@/components/ui/divider';
-import RecoilProvider from '@/components/providers/recoil-provider';
+import { NavBar } from '@/components/layouts/navbar';
+import { SideBar } from '@/components/layouts/sidebar';
+import { AdBar } from '@/components/layouts/adbar';
+import { Footer } from '@/components/layouts/footer';
+import { Divider } from '@/components/ui/divider';
 
 const geistSans = localFont({
   src: '../../public/fonts/GeistVF.woff',

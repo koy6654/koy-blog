@@ -40,16 +40,13 @@ function ThemeIcon({ theme }: ThemeIconProps) {
 
 function DropdownMenuItemIcon({ theme, onClick }: DropdownMenuItemIconProps) {
   return (
-    <DropdownMenuItem
-      className="flex flex-col justify-center items-center"
-      onClick={onClick}
-    >
+    <DropdownMenuItem className="flex flex-col justify-center items-center" onClick={onClick}>
       <ThemeIcon theme={theme} />
     </DropdownMenuItem>
   );
 }
 
-function NavBar() {
+export function NavBar() {
   const [selectedTheme, setSelectedTheme] = useState<Theme>(DARK_THEME);
   const { setTheme } = useTheme();
 
@@ -61,9 +58,7 @@ function NavBar() {
   return (
     <nav className="navbar-footer px-8 md:px-28 flex items-center justify-between">
       <div className="flex items-center">
-        <h1 className="md:text-2xl text-base font-bold font-lora">
-          Koy6654.blog
-        </h1>
+        <h1 className="md:text-2xl text-base font-bold font-sans">DevKoy</h1>
       </div>
       <div className="flex items-center gap-4">
         <DropdownMenu>
@@ -73,14 +68,8 @@ function NavBar() {
           <DropdownMenuContent>
             <DropdownMenuLabel>Themes</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItemIcon
-              theme={DARK_THEME}
-              onClick={() => handleDropdownMenuItemIconOnClick(DARK_THEME)}
-            />
-            <DropdownMenuItemIcon
-              theme={LIGHT_THEME}
-              onClick={() => handleDropdownMenuItemIconOnClick(LIGHT_THEME)}
-            />
+            <DropdownMenuItemIcon theme={DARK_THEME} onClick={() => handleDropdownMenuItemIconOnClick(DARK_THEME)} />
+            <DropdownMenuItemIcon theme={LIGHT_THEME} onClick={() => handleDropdownMenuItemIconOnClick(LIGHT_THEME)} />
           </DropdownMenuContent>
         </DropdownMenu>
         <Link href="https://github.com/koy6654" target="_blank">
@@ -90,5 +79,3 @@ function NavBar() {
     </nav>
   );
 }
-
-export default NavBar;

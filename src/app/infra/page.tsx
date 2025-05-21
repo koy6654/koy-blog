@@ -3,7 +3,7 @@
 import { PostPreview } from '@/components/pages/post-preview';
 import { Pages } from '@/utils/constants';
 
-function ReactPage() {
+function InfraPostPreviewPage() {
   return (
     <main className="flex flex-col">
       <PostPreview page={Pages.INFRA} />
@@ -11,4 +11,4 @@ function ReactPage() {
   );
 }
 
-export default ReactPage;
+export default InfraPostPreviewPage;

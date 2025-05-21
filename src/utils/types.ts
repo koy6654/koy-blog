@@ -1,7 +1,13 @@
-import { Pages } from './constants';
+import { Pages } from '@utils/constants';
+import { PostFileData } from '@utils/functions/gray-matter';
 
 export type PagesKey = keyof typeof Pages;
 export type PagesType = (typeof Pages)[PagesKey];
 export type PageCounts = {
   [key in PagesType]: number;
+};
+
+export type MdxList = {
+  total: number;
+  files: PostFileData[];
 };

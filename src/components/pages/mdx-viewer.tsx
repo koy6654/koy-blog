@@ -1,5 +1,5 @@
 import { MDXRemote } from 'next-mdx-remote/rsc';
-import Divider from '@components/ui/divider';
+import { Divider } from '@components/ui/divider';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { getPostFileDataByName } from '@/utils/functions/gray-matter';

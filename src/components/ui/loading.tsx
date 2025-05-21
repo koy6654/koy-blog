@@ -9,7 +9,7 @@ export const LoadingContent = () => {
   }, []);
 
   return (
-    <div className="flex flex-col justify-start items-center h-screen">
+    <div className="flex flex-col justify-start items-center p-4">
       <div className="w-full rounded-lg shadow-lg">
         <Skeleton className="h-10 w-full mb-4" />
         <Skeleton className="h-6 w-full mb-2" />
@@ -30,7 +30,7 @@ export const LoadingContent = () => {
 
 const LoadingSidebar = () => {
   return (
-    <div className="flex flex-col justify-start items-center h-screen">
+    <div className="flex flex-col justify-start items-center">
       <Skeleton className="h-8 w-full mb-3 rounded-md" />
       <Skeleton className="h-8 w-full mb-3 rounded-md" />
       <Skeleton className="h-8 w-full mb-3 rounded-md" />
@@ -41,16 +41,15 @@ const LoadingSidebar = () => {
 
 export const LoadingMdxList = () => {
   return (
-    <div className="flex flex-col justify-start items-center h-screen">
+    <div className="flex flex-col justify-start items-center">
       <div className="w-full rounded-lg shadow-lg p-4">
         <Skeleton className="w-full h-36 mb-8" />
         <Skeleton className="w-full h-36 mb-8" />
         <Skeleton className="w-full h-36 mb-8" />
         <Skeleton className="w-full h-36 mb-8" />
-        <Skeleton className="w-full h-36 mb-8" />
-        <Skeleton className="w-full h-36 mb-8" />
-        <Skeleton className="w-full h-36 mb-8" />
-        <Skeleton className="w-full h-36 mb-8" />
+      </div>
+      <div className="w-full flex flex-row justify-center items-center">
+        <Skeleton className="w-52 h-12 mb-8" />
       </div>
     </div>
   );

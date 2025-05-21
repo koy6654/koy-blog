@@ -3,7 +3,7 @@
 import { PostPreview } from '@/components/pages/post-preview';
 import { Pages } from '@/utils/constants';
 
-function ReactPage() {
+function FrontendPostPreviewPage() {
   return (
     <main className="flex flex-col">
       <PostPreview page={Pages.FRONTEND} />
@@ -11,4 +11,4 @@ function ReactPage() {
   );
 }
 
-export default ReactPage;
+export default FrontendPostPreviewPage;
