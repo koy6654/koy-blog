@@ -21,7 +21,7 @@ const PaginationContent = React.forwardRef<HTMLUListElement, React.ComponentProp
 PaginationContent.displayName = 'PaginationContent';
 
 const PaginationItem = React.forwardRef<HTMLLIElement, React.ComponentProps<'li'>>(({ className, ...props }, ref) => (
-  <li ref={ref} className={tailwindMerge('', className)} {...props} />
+  <li ref={ref} className={tailwindMerge('cursor-pointer', className)} {...props} />
 ));
 PaginationItem.displayName = 'PaginationItem';
 
