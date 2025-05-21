@@ -9,8 +9,8 @@ description: 'Next.js 환경에서 next-mdx-remote, gray-matter를 사용해 MDX
 ---
 <br />
 ## 개요
-개발 블로그 만들기로 결심한 후 포스팅 방식을 고민해봤는데 역시 가장 익숙한 노션에서 문서를 만들고 MDX로 Export하는 방식이 편할 것 같아 채택해보기로 했다.
-또한, 개발 프로젝트의 얼굴 역할을 하는 README.md(마크다운) 언어를 제대로 다뤄보고 싶다는 욕심도 있었다.
+개발 블로그 만들기로 결심한 후 포스팅 방식을 고민해봤는데 역시 가장 익숙한 노션에서 문서를 만들고 MDX로 Export하는 방식이 편할 것 같아 채택해보기로 했습니다.
+또한, 개발 프로젝트의 얼굴 역할을 하는 README.md(마크다운) 언어를 제대로 다뤄보고 싶다는 욕심도 있었습니다.
 
 
 <MdxDivider />
@@ -81,7 +81,7 @@ MDX 파일의 메타데이터(헤더)와 콘텐츠를 분리시켜주는 유용�
 ```
 <br />
 
-#### 2. gray-matter를 사용해 MDX의 메타데이터와 콘텐츠 값을 가져온다.
+#### 2. gray-matter를 사용해 MDX의 메타데이터와 콘텐츠 값을 가져옵니다.
 
 ```tsx
 import fs from 'fs';
@@ -94,7 +94,7 @@ interface GrayMatterData {
   description: string;
 }
 
-// filePath는 MDX 파일의 경로를 가져온다.
+// filePath는 MDX 파일의 경로를 가져옵니다.
 function getPostFileDataByPath(filePath: string): PostFileData {
   const markdownWithMeta = fs.readFileSync(filePath, 'utf-8');
   const { data, content }: GrayMatterFile<string> = matter(markdownWithMeta);
@@ -107,7 +107,7 @@ function getPostFileDataByPath(filePath: string): PostFileData {
 ```
 <br />
 
-#### 3. gray-matter의 메타데이터를 리스트로 만든다.
+#### 3. gray-matter의 메타데이터를 리스트로 만듭니다.
 (파일 리스트를 가져와서 Link를 생성하는 예제)
 ```tsx
 import PostPreview from '@/components/pages/post-preview';
@@ -170,7 +170,7 @@ export default PostPreview;
 
 <br />
 
-#### 4. gray-matter의 콘텐츠를 next-mdx-remote를 사용해 페이지를 보여준다.
+#### 4. gray-matter의 콘텐츠를 next-mdx-remote를 사용해 페이지를 보여줍니다.
 
 ```tsx
 import { Pages } from '@/utils/enums';
@@ -202,7 +202,7 @@ export default MdxViewer;
 
 ## 추가 정보
 ---
-#### MDX 기본 컴포넌트들을 커스터마이징 할 수 있다.
+#### MDX 기본 컴포넌트들을 커스터마이징 할 수 있습니다.
 ```tsx
 const MdxComponents = {
   hr: (props: React.HTMLAttributes<HTMLHRElement>) => (
