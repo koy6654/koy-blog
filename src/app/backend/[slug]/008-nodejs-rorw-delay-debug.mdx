@@ -330,20 +330,20 @@ async function main() {
     const pgReadWritePool = new Pool(pgReadWriteConfig);
     const pgReadOnlyPool = new Pool(pgReadOnlyConfig);
 
-		const result = await pgReadWritePool.transaction(async (conn) => {
-				await conn.query(`
-		        INSERT INTO test(id, data) VALUES($1, $2)
-		    `, ['id1', 'data1']);
+    const result = await pgReadWritePool.transaction(async (conn) => {
+        await conn.query(`
+            INSERT INTO test(id, data) VALUES($1, $2)
+        `, ['id1', 'data1']);
 
-				await conn.query(`
-		        INSERT INTO test(id, data) VALUES ($1, $2)
-		    `, ['id2', 'data2']);
-		
-		
-				return await conn.query (`
-		        SELECT count(*) FROM test
-				`)
-		})
+        await conn.query(`
+            INSERT INTO test(id, data) VALUES ($1, $2)
+        `, ['id2', 'data2']);
+
+
+        return await conn.query (`
+            SELECT count(*) FROM test
+        `)
+    })
 
     return result.rows[0].count;
 }
