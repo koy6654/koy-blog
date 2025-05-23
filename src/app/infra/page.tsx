@@ -1,12 +1,12 @@
 'use client';
 
 import { PostPreview } from '@/components/pages/post-preview';
-import { Pages } from '@/utils/constants';
+import { PAGES } from '@/utils/constants';
 
 function InfraPostPreviewPage() {
   return (
     <main className="flex flex-col">
-      <PostPreview page={Pages.INFRA} />
+      <PostPreview page={PAGES.INFRA} />
     </main>
   );
 }

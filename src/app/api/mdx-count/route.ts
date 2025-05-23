@@ -1,16 +1,16 @@
-import { Pages } from '@/utils/constants';
+import { PAGES } from '@/utils/constants';
 import { getPostFilePaths } from '@/utils/functions/gray-matter';
 import { PageCounts } from '@/utils/types';
 
 export async function GET() {
   try {
-    const pages = Object.values(Pages);
+    const pages = Object.values(PAGES);
 
     const pageCounts: PageCounts = {
-      [Pages.CAREER]: 0,
-      [Pages.FRONTEND]: 0,
-      [Pages.BACKEND]: 0,
-      [Pages.INFRA]: 0,
+      [PAGES.CAREER]: 0,
+      [PAGES.FRONTEND]: 0,
+      [PAGES.BACKEND]: 0,
+      [PAGES.INFRA]: 0,
     };
 
     pages.forEach((page) => {

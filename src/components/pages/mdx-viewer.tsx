@@ -30,9 +30,7 @@ const CodeBlock = ({ children }: CodeBlockProps) => {
 };
 
 const MdxComponents = {
-  hr: (props: React.HTMLAttributes<HTMLHRElement>) => (
-    <Divider {...props} orientation="horizontal" />
-  ),
+  hr: (props: React.HTMLAttributes<HTMLHRElement>) => <Divider {...props} orientation="horizontal" />,
   h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
     <h1 className="text-4xl font-bold mt-6 mb-4 leading-tight" {...props} />
   ),
@@ -51,44 +49,21 @@ const MdxComponents = {
   h6: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
     <h6 className="text-base font-semibold mt-1 mb-1" {...props} />
   ),
-  p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
-    <p className="mt-2 mb-0 text-base" {...props} />
-  ),
-  ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
-    <ul className="list-disc mt-2 mb-4" {...props} />
-  ),
-  ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
-    <ol className="list-decimal mt-2 mb-4" {...props} />
-  ),
-  li: (props: React.HTMLAttributes<HTMLLIElement>) => (
-    <li className="ml-4" {...props} />
-  ),
-  strong: (props: React.HTMLAttributes<HTMLElement>) => (
-    <strong className="font-semibold" {...props} />
-  ),
-  em: (props: React.HTMLAttributes<HTMLElement>) => (
-    <em className="italic text-black dark:text-gray-300" {...props} />
-  ),
+  p: (props: React.HTMLAttributes<HTMLParagraphElement>) => <p className="mt-2 mb-0 text-base" {...props} />,
+  ul: (props: React.HTMLAttributes<HTMLUListElement>) => <ul className="list-disc mt-2 mb-4" {...props} />,
+  ol: (props: React.HTMLAttributes<HTMLOListElement>) => <ol className="list-decimal mt-2 mb-4" {...props} />,
+  li: (props: React.HTMLAttributes<HTMLLIElement>) => <li className="ml-4" {...props} />,
+  strong: (props: React.HTMLAttributes<HTMLElement>) => <strong className="font-semibold" {...props} />,
+  em: (props: React.HTMLAttributes<HTMLElement>) => <em className="italic text-black dark:text-gray-300" {...props} />,
   a: (props: React.HTMLAttributes<HTMLAnchorElement>) => (
-    <a
-      className="text-blue-500 hover:underline dark:text-blue-300"
-      {...props}
-    />
+    <a className="text-blue-500 hover:underline dark:text-blue-300" {...props} />
   ),
-  img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
-    <img className="max-w-full h-auto" {...props} />
-  ),
+  img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img className="max-w-full h-auto" {...props} />,
   blockquote: (props: React.BlockquoteHTMLAttributes<HTMLQuoteElement>) => (
-    <blockquote
-      className="border-l-4 pl-4 italic text-black dark:text-gray-400 mt-4 mb-4"
-      {...props}
-    />
+    <blockquote className="border-l-4 pl-4 italic text-black dark:text-gray-400 mt-4 mb-4" {...props} />
   ),
   code: (props: React.HTMLAttributes<HTMLElement>) => (
-    <code
-      className="bg-[#ececec] text-[#0d0d0d] p-1 rounded dark:bg-[#424242] dark:text-[#FFFFFF]"
-      {...props}
-    />
+    <code className="bg-[#e2e2e2] text-[#0d0d0d] p-1 rounded dark:bg-[#424242] dark:text-[#FFFFFF]" {...props} />
   ),
   pre: (props: React.HTMLAttributes<HTMLElement>) => {
     return <CodeBlock>{props.children}</CodeBlock>;
@@ -103,16 +78,10 @@ const MdxComponents = {
     <thead className="bg-gray-100 dark:bg-[#2c2c2c]" {...props} />
   ),
   th: (props: React.HTMLAttributes<HTMLTableCellElement>) => (
-    <th
-      className="p-2 border border-gray-300 dark:border-[#fff3] font-semibold text-left"
-      {...props}
-    />
+    <th className="p-2 border border-gray-300 dark:border-[#fff3] font-semibold text-left" {...props} />
   ),
   td: (props: React.HTMLAttributes<HTMLTableCellElement>) => (
-    <td
-      className="p-2 border border-gray-200 dark:border-[#fff3] align-top"
-      {...props}
-    />
+    <td className="p-2 border border-gray-200 dark:border-[#fff3] align-top" {...props} />
   ),
   MdxDivider: (props: React.HTMLAttributes<HTMLDivElement>) => (
     <>

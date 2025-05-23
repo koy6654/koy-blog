@@ -1,12 +1,12 @@
 'use client';
 
 import { PostPreview } from '@/components/pages/post-preview';
-import { Pages } from '@/utils/constants';
+import { PAGES } from '@/utils/constants';
 
 function FrontendPostPreviewPage() {
   return (
     <main className="flex flex-col">
-      <PostPreview page={Pages.FRONTEND} />
+      <PostPreview page={PAGES.FRONTEND} />
     </main>
   );
 }

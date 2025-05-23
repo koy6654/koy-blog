@@ -5,7 +5,7 @@ export const LIGHT_THEME = 'light';
 
 export const NAVBAR_ICON_SIZE = '28';
 
-export const Pages = {
+export const PAGES = {
   CAREER: 'career',
   FRONTEND: 'frontend',
   BACKEND: 'backend',

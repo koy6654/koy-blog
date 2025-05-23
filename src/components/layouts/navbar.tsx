@@ -58,7 +58,9 @@ export function NavBar() {
   return (
     <nav className="navbar-footer px-8 md:px-28 flex items-center justify-between">
       <div className="flex items-center">
-        <h1 className="md:text-2xl text-base font-bold font-sans">DevKoy</h1>
+        <h1 className="md:text-2xl text-base font-bold font-sans">
+          <Link href="/">DevKoy</Link>
+        </h1>
       </div>
       <div className="flex items-center gap-4">
         <DropdownMenu>

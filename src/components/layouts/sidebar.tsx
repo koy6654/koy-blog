@@ -6,14 +6,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getMdxCount } from '@/utils/requests';
-import { Pages } from '@/utils/constants';
+import { PAGES } from '@/utils/constants';
 import { PageCounts } from '@/utils/types';
 
 export function SideBar() {
   const currentPage = usePathname();
 
   const [pageCounts, setPageCounts] = useState<PageCounts | null>(null);
-  const pages = Object.values(Pages);
+  const pages = Object.values(PAGES);
 
   const getPosts = async (): Promise<void> => {
     const result = await getMdxCount();
