@@ -14,6 +14,7 @@ export enum MdxFiles {
   NODEJS_BULLMQ_WORKER = '006-nodejs-bullmq-worker',
   PSQL_TID_INDEXSCAN = '007-psql-tid-indexscan',
   NODEJS_RORW_DELAY_DEBUG = '008-nodejs-rorw-delay-debug',
+  PSQL_SLOW_QUERY_01 = '009-psql-slow-query-01',
 
   // INFRA
   DOCKER_KUBENETES_TUTORIAL = 'docker-kubenetes-install',

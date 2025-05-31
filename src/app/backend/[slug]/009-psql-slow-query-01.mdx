@@ -1,0 +1,107 @@
+---
+id: '009-psql-slow-query-01'
+title: '[PostgreSQL] 슬로우 쿼리 탐방기 - UPDATE CASE WHEN'
+date: '2025-06-02'
+description: 'UPDATE CASE WHEN 쿼리와 인덱스를 활용해 기존 쿼리를 개선해보기'
+---
+
+# [PostgreSQL] 슬로우 쿼리 탐방기 - UPDATE CASE WHEN
+<MdxDivider />
+
+## 개요
+
+SRE 업무를 수행하면서 실행 시간이 200ms 를 초과하는 쿼리들을 대상으로 최적화 작업을 진행하게 되었습니다. 그 중 PostgreSQL 의 `UPDATE CASE WHEN` 문과 인덱스를 활용해 쿼리를 개선해본 경험을 공유하려 합니다.
+
+---
+
+## UPDATE CASE WHEN 이란
+
+`UPDATE CASE WHEN` 은 하나의 UPDATE 쿼리로 공통 조건에 따라 해당하는 row를 모두 가져와서 각 칼럼을 조건에 맞게 업데이트 할 수 있는 PostgreSQL 쿼리이며, 기본적으로 아래와 같은 형태로 사용할 수 있습니다.
+
+```sql
+UPDATE
+	테이블
+SET
+	컬럼 = 
+		CASE
+	    WHEN 조건1 THEN 값1
+	    WHEN 조건2 THEN 값2
+	    ELSE 기본값
+		END
+WHERE 공통조건;
+```
+
+예제로, 3학년 학생들의 점수에 따라 등급을 부여하는 쿼리를 작성해야한다면, 아래와 같이 작성할 수 있습니다.
+
+```sql
+UPDATE students
+SET grade = CASE
+    WHEN score >= 90 THEN 'A'
+    WHEN score >= 80 THEN 'B'
+    WHEN score >= 70 THEN 'C'
+    ELSE 'F'
+END
+WHERE grade_level = '3학년';
+```
+<br />
+`ELSE` 절을 생략할 경우 자동으로 `NULL`로 설정된다는 점을 주의해야 합니다.
+
+---
+
+## 쿼리 분석 및 개선 과정
+
+개선 전 쿼리는 아래 예제와 같이 공통 조건을 기준으로 `IN, NOT IN` 조건만 다른 두 개의 `UPDATE` 쿼리를 각각 실행하는 방식이었습니다.
+
+```sql
+-- 개선 전 인덱스 상태
+CREATE INDEX test_name_status_idx ON test USING btree(name, status);
+
+-- 개선 전 쿼리
+UPDATE 
+    test
+SET
+    data = 'a'
+WHERE
+    name = 'name' AND
+    status = 'status' AND
+    total = 'total' AND
+    field IN ('a', 'b', 'c');
+
+UPDATE 
+    test
+SET
+    data = 'b'
+WHERE
+    name = 'name' AND
+    status = 'status' AND
+    total = 'total' AND
+    field NOT IN ('a', 'b', 'c');
+```
+
+위의 경우  `name, status, total`이 공통조건이므로 아래와 같이 `UPDATE CASE WHEN` 문을 활용하면 DB I/O 비용을 절반으로 줄일 수 있습니다.
+
+```sql
+-- 개선 후 쿼리
+UPDATE
+    test
+SET
+    data = CASE
+                WHEN field IN ('a', 'b', 'c') THEN 'a'
+                ELSE 'b'
+            END
+WHERE
+    name = 'name' AND
+    status = 'status' AND
+    total = 'total';
+```
+<br />
+또한, 쿼리 실행 계획을 분석하는 과정에서 `name, status` 인덱스 스캔이 사용됨에도 불구하고, 쿼리 속도가 259ms로 상당히 느린편에 속한 것을 확인할 수 있었습니다.
+원인을 분석한 결과 `name, status` 조건에 해당하는 시멘틱 데이터가 약 30만 건가량 누적되어 있었고, 인덱스 스캔이 사용되더라도 매번 30만 건이 추출된 상태에서 `total`에 해당하는 row를 순차 스캔하여 UPDATE 하기에 쿼리의 성능이 느릴 수 밖에 없는 것을 확인했습니다.
+
+이에 따라 `name, status, total` 을 전부 포함한 복합인덱스를 아래와 같이 적용함으로써 쿼리의 실행 시간을 대폭 감소 시켰습니다.
+
+```sql
+CREATE INDEX test_name_status_idx ON test USING btree(name, status, total);
+```
+<br />
+결과적으로, 두 번 수행되던 UPDATE 쿼리를 한 번으로 통합하고 평균 실행 시간을 259ms에서 3.24ms로 단축함으로써, 총 실행 시간을 `518ms → 3.24ms`로 개선할 수 있었습니다.
