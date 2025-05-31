@@ -6,15 +6,15 @@ description: 'Node.js 환경에서 Signature, Implementation의 개념을 익히
 ---
 
 # [Node.js] Function Overloading의 개념 및 활용
----
-<br />
+<MdxDivider />
+
 ## 개요
 
 프로젝트를 진행하던 도중 이미 여러 곳에서 사용 중이던 함수에 매개 변수를 추가해야할 상황이 발생했습니다.<br />
 이럴 때 유지보수나 확장성을 고려하여 개발하는 방법으로 Function Overloading을 활용할 수 있습니다.<br />
 이번 포스팅에서는 Function Overloading을 살펴보기 전에, 함수를 구성하는 Signature와 Implementation에 대해 먼저 이해하고, 이를 기반으로 Function Overloading에 대해 다뤄보겠습니다.
 
-<MdxDivider />
+---
 
 ## Signature 정의 및 예제
 
@@ -24,7 +24,7 @@ Signature란 함수가 어떤 인자를 받고, 어떤 타입을 반환하는지
 function test(a: number, b: number): number;
 ```
 
-<MdxDivider />
+---
 
 ## Implementation 정의 및 예제
 
@@ -37,7 +37,7 @@ function test(a: number, b: number): number {
 }
 ```
 
-<MdxDivider />
+---
 
 ## Function Overloading 정의 및 예제
 
@@ -68,7 +68,7 @@ test(1, 2, 3);  // 결과: 6
 - `Signature #3`: 인자 `a, b, c`를 모두 숫자로 받고, 숫자 타입 값을 반환하는 경우를 정의합니다.
 - `Implementation`: 실제 코드 로직을 넣어 함수를 구현합니다.
 
-<MdxDivider />
+---
 
 ## Tips
 

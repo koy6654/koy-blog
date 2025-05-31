@@ -6,14 +6,13 @@ description: 'Node.js 환경에서 생성자 함수의 개념을 익혀보기'
 ---
 
 # [Node.js] 생성자 함수와 prototype의 개념
----
-<br />
+<MdxDivider />
 
 ## 개요
 오래된 Npm 라이브러리 또는 레거시 코드를 살펴보다보면, 클래스처럼 사용되는 함수 패턴을 볼 수 있습니다.<br />
 이를 생성자 함수(Constructor function)라고 부르는데, 어떤 개념을 가지고 사용되었는지 확인해보겠습니다.
 
-<MdxDivider />
+---
 
 ## 생성자 함수란
 생성자 함수는 JavaScript의 기본 기능 중 하나로, 객체를 생성하기 위한 함수입니다.<br />
@@ -41,7 +40,7 @@ test.initTest();
 console.log(test.test); // 결과 값: 0
 ```
 
-<MdxDivider />
+---
 
 ## prototype이란
 생성자 함수를 설명할때 ***prototype*** 의 설명이 꼭 필요합니다.<br />
@@ -70,7 +69,7 @@ console.log(Test.prototype === test.__proto__); // true 출력
 console.log(Test.prototype === Object.getPrototypeOf(test)); // true 출력
 ```
 
-<MdxDivider />
+---
 
 ## 마무리
 자바스크립트에 Class 문법이 도입된 이후 생성자 함수 방식보다는 클래스 문법이 사실 더 일반적으로 사용되기 때문에, 해당 개념은 개발할때 보다는 레거시 코드나 공개된 npm 라이브러리를 읽을 때 유용하게 사용할 수 있을 것 같습니다.

@@ -30,7 +30,15 @@ const CodeBlock = ({ children }: CodeBlockProps) => {
 };
 
 const MdxComponents = {
-  hr: (props: React.HTMLAttributes<HTMLHRElement>) => <Divider {...props} orientation="horizontal" />,
+  hr: (props: React.HTMLAttributes<HTMLHRElement>) => (
+    <>
+      <br />
+      <br />
+      <Divider />
+      <br />
+      <br />
+    </>
+  ),
   h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
     <h1 className="text-4xl font-bold mt-6 mb-4 leading-tight" {...props} />
   ),
@@ -85,10 +93,7 @@ const MdxComponents = {
   ),
   MdxDivider: (props: React.HTMLAttributes<HTMLDivElement>) => (
     <>
-      <br />
-      <br />
-      <Divider />
-      <br />
+      <Divider {...props} orientation="horizontal" />
       <br />
     </>
   ),

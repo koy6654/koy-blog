@@ -6,15 +6,14 @@ description: 'Node.js 환경에서 try..catch의 개념을 익히고 어떤 경�
 ---
 
 # [Node.js] try..catch의 개념 및 활용
----
-<br />
+<MdxDivider />
 
 ## 개요
 ***try..catch*** 는 개발에서 자주 접할 수 있는 예외 처리 핵심 로직입니다.<br />
 하지만 언제 사용해야 하는지, 어떨때 피하면 좋을지에 대해서는 정답은 명확하지 않아 여러 의견이 존재합니다.<br />
 그래서 이에 대해 개념 설명 및 토의를 진행하였고 내린 결론을 정리해두고자 합니다.
 
-<MdxDivider />
+---
 
 ## try..catch의 개념 및 사용 방법
 #### try..catch의 개념
@@ -29,7 +28,7 @@ try {
     console.log('Catch error'); // 에러 발생 시 실행됨
 }
 ```
-<MdxDivider />
+---
 
 ## try…catch 의 특징
 ***try...catch*** 는 런타임 에러에서만 동작합니다.<br />
@@ -73,7 +72,7 @@ throw new Error('e79902d1-fe1c-5554-a68f-b67c308444c6');
 Error: e79902d1-fe1c-5554-a68f-b67c308444c6
     at Timeout._onTimeout (/your/path/dist/index.js:12:11)
 ```
-<MdxDivider />
+---
 
 ## finally의 개념 및 사용 방법
 #### finally의 개념
@@ -91,7 +90,7 @@ try {
     console.log('Finally anything'); // (Optional) 무조건 실행되는 코드
 }
 ```
-<MdxDivider />
+---
 
 ## finally의 특징
 finally는 항상 실행되는 코드 블록이지만, ***try..catch..finally*** 구문의 활용 방법에 따라 동작의 패턴이 약간씩 달라집니다.<br />
@@ -215,7 +214,7 @@ Finally anything
 ```
 <br />
 
-<MdxDivider />
+---
 
 ## try..catch를 언제 사용하면 좋을까
 위의 개념을 토대로 ***try..catch*** 를 언제 사용하는 것이 가장 베스트 케이스일지 논의를 진행하였습니다.<br />

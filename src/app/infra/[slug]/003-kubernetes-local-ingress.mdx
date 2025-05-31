@@ -6,8 +6,8 @@ description: 'Kubernetes의 Ingress와 Nginx를 활용하여 로컬 환경에서
 ---
 
 # [Kubernetes] Ingress를 로컬 환경에서 구성하기
----
-<br />
+<MdxDivider />
+
 ## 개요
 
 이전 포스팅에서 Kubernetes의 개념과 기본 구조를 정리해보았고, 이번에는 이를 바탕으로 로컬 환경에서 Kubernetes 클러스터를 구성해보려고 합니다. 구성의 흐름은 아래와 같습니다.<br />
@@ -23,7 +23,7 @@ ClusterIP는 클러스터 내부에서만 접근 가능한 서비스로, 이를 
 <br />
 *로컬 환경이기에 실제 서비스 환경에서 사용하는 LoadBalancer는 제외하였습니다. 대신, NodePort를 사용하여 Ingress Controller로 트래픽을 처리하고, 이를 클러스터 내의 ClusterIP 서비스와 연계하여 실제 클라우드 환경에서의 배포 시나리오와 유사한 방식으로 설정했습니다.*<br />
 
-<MdxDivider />
+---
 
 ## 디렉토리 구조
 
@@ -44,7 +44,7 @@ k8s
         └── ingress-nginx-controller.yaml
 ```
 
-<MdxDivider />
+---
 
 ## My App
 
@@ -193,7 +193,7 @@ NAME                                DESIRED   CURRENT   READY   AGE
 replicaset.apps/my-app-85ff6544cf   2         2         2       35m
 ```
 
-<MdxDivider />
+---
 
 ## Nginx
 
@@ -310,7 +310,7 @@ job.batch/ingress-nginx-admission-create   1/1           4s         3m39s
 job.batch/ingress-nginx-admission-patch    1/1           4s         3m39s
 ```
 
-<MdxDivider />
+---
 
 
 # Ingress
@@ -386,7 +386,7 @@ kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8080:80
 curl http://localhost:8080
 ```
 
-<MdxDivider />
+---
 
 ## 부하 테스트
 100번의 Request를 통해 my-app pod 2개에 균등하게 Request가 오는지 확인해보겠습니다.

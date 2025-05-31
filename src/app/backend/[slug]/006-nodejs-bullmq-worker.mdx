@@ -6,14 +6,13 @@ description: 'Cron 시간 패턴 기반의 안정적인 내부 작업 처리를 
 ---
 
 # [Node.js] BullMQ를 활용해 Internal Job Worker 만들어보기
----
-<br />
+<MdxDivider />
 
 ## 개요
 
 기존에 사용하던 cron 기반 스케줄링 작업들의 불안정성 문제를 해결하기 위해 오픈소스 솔루션들을 검토해보았습니다. 좋은 메세지큐는 많았으나 현재의 상황과 비용 측면 등을 고려했을때 BullMQ가 가장 적합하다고 판단하여 이를 활용한 아키텍처를 구현해보았고, 그 과정에서 알게 된 내용들을 이 포스팅에 정리했습니다.
 
-<MdxDivider />
+---
 
 ## BullMQ 구성 요소들
 
@@ -32,7 +31,7 @@ Job 을 등록하고 Redis에 저장하는 역할을 하며, 큐 이름 기반�
 #### Processor
 지정된 Worker 가 Job 을 처리할 때 실행되는 실제 함수입니다. 비즈니스 로직, DB 작업 등이 포함됩니다.
 
-<MdxDivider />
+---
 
 ## 아키텍처 구조와 코드 분석/참조
 
@@ -149,7 +148,7 @@ export async function isExecuteJobByIdempotency(
 }
 ```
 
-<MdxDivider />
+---
 
 ## BullMQ 에 대한 이모저모 (v4.6.0)
 
@@ -238,7 +237,7 @@ Worker의 listener 예외 처리는 아래 로직을 통해 try..catch 로 감�
   }
 ```
 
-<MdxDivider />
+---
 
 ## 코드 참조
 
