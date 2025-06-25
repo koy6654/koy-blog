@@ -1,0 +1,143 @@
+---
+id: '009-psql-slow-query-02'
+title: '[PostgreSQL] 슬로우 쿼리 탐방기 - 인덱스가 무시되는 경우'
+date: '2025-06-02'
+description: '인덱스가 무시되는 경우 PSQL 옵티마이저를 고려하여 기존 쿼리를 개선해보기'
+---
+
+# [PostgreSQL] 슬로우 쿼리 탐방기 - 인덱스가 무시되는 경우
+
+## 개요
+
+SRE 업무를 수행하면서 서비스 안정성 향상을 위한 쿼리 성능 모니터링 및 최적화 작업을 진행하게 되었습니다.
+
+그 중 인덱스가 존재하고 조건을 충족함에도 PostgreSQL 이 자체적으로 판단하여 인덱스 스캔을 타지 않아 쿼리 성능에 문제가 발생하는  건을 개선해본 경험을 공유해보려 합니다.
+
+---
+
+## PostgreSQL이 인덱스를 사용하지 않는 경우
+
+쿼리를 인덱스 조건에 맞춰도 아래와 같은 경우 PostgreSQL 예외적으로 판단하여 인덱스 스캔을 사용하지 않습니다.
+- **테이블 크기가 작을 경우**<br />
+테이블의 크기가 너무 작다면 인덱스를 사용하는 오버헤드가 더 크다고 판단하여 Seq Scan을 사용하는 경우가 있습니다.
+
+- **PSQL이 데이터 통계를 보고 적합한 스캔 방식을 선택하는 경우**<br />
+PSQL은 `pg_stats`의 내용을 바탕으로 데이터 분포를 Index Scan 비용과 Seq Scan 비용을 예상하여 더 나은 방법으로 판단하여 쿼리를 실행합니다.
+예를 들어, WHERE 조건에 해당하는 row가 대략적으로 10퍼센트 이상의 경우 인덱스 조건에 부합하더라도 Seq Scan을 사용합니다.
+반대로 조건에 부합하는 row가 10퍼센트 이하여도 PSQL은 데이터 밀집도에 따라 Seq Scan을 사용하기도 합니다.
+이 외에도 다양한 케이스에서 PSQL은 옵티마이저 판단에 따라 Scan 방식을 스스로 판단합니다.
+
+따라서 각 테이블의 데이터 통계는 실행 계획 수립에 매우 중요하므로 ANALYZE를 통해 데이터 통계를 최신 상태로 유지하는 것이 좋습니다.
+
+---
+
+## 쿼리 분석 및 개선 과정
+
+#### 개선 전 쿼리 분석
+
+위 케이스 중 PSQL이 데이터 통계를 보고 적합한 스캔 방식을 선택하는 경우에 대해 경험해본 사례를 공유해보고자 합니다.
+우선, 개선하기 전의 인덱스 및 쿼리 상태입니다.
+
+```sql
+-- 개선 전 인덱스 상태
+CREATE INDEX test_name_status_idx btree(name, status) WHERE field = 'field'::text AND hash = 'hash'::text AND menu = 'menu';
+
+-- 개선 전 쿼리
+EXPLAIN SELECT
+        id
+FROM
+        test
+WHERE
+        name = 'name' AND
+        status = 'status' AND
+        field = 'field' AND
+        hash = 'hash' AND
+        menu = 'menu'
+LIMIT 10;
+
+-- 개선 전 쿼리 실행 결과
+Limit (cost=0.00..8.47 rows=10 width=54) (actual time=665.355..665.359 rows=10 loops=1)
+   ->  Seq Scan on test (cost=0.00..199438.52 rows=235499 width=54) (actual time=665.354..665.357 rows=10 loops=1)
+         Filter: ((name = 'new_name'::text) AND (status = 'status'::text) AND (field = 'field'::text) AND (hash = 'hash'::text) AND (menu = 'menu'::text))
+         Rows Removed by Filter: 4372302
+ Planning Time: 0.106 ms
+ Execution Time: 665.381 ms
+
+```
+해당 쿼리는 인덱스 조건을 전부 충족함에도 인덱스를 사용하지 않고 Seq Scan을 사용했으며, 위와 같은 분석 결과를 확인할 수 있었습니다. (실제 서버에서 평균 실행 시간 = 493 ms)
+<br />
+
+#### 원인 분석 및 개선 과정
+
+개선 전 쿼리는 기본적으로 인덱스 조건에 부합하고 있었기 때문에, 다음과 같은 항목들을 순차적으로 점검해보았습니다.
+
+- **ANALYZE가 최신 상태인가?**
+    
+    → ANALYZE는 최신 상태로, 통계 정보에는 문제가 없었습니다.
+    
+- **WHERE 조건이 형변환 등으로 인해 인덱스 조건과 정확히 일치하지 않았는가?**
+    
+    → LIMIT을 제거하고 실행한 결과, Index Scan이 정상적으로 동작하는 것을 확인했습니다.
+    
+- **WHERE 조건을 만족하는 row 비율이 높은가?**
+    
+    → 조건에 부합하는 데이터는 약 1.4% 수준으로, selectivity가 낮은 편이었습니다.
+    
+
+위 과정을 거치면서, LIMIT을 제거했을 때 Index Scan이 선택되었다는 점을 고려해보았고, 다음과 같은 사실을 유추할 수 있습니다.<br />
+PSQL은 LIMIT이 있는 경우, 가능한 한 빠르게 LIMIT의 개수 만큼 결과를 반환하는 것을 우선시 합니다.<br />
+그런데 조건을 만족하는 row의 밀집도가 낮거나, 해당 row들이 디스크 상에 넓게 흩어져 있을 것으로 판단되면, 인덱스를 따라 heap 데이터를 랜덤하게 접근하는 과정에서 발생하는 I/O 비용이 오히려 더 커질 수 있다고 판단하고 Seq Scan을 실행했을 수 있다는 것입니다.
+
+***(참고)<br />
+Index Scan + Heap Fetch 조합 vs Seq Scan 에서 Seq Scan이 더 빠를 수 있는 이유
+Index 자체는 정렬되어 있어도, 실제 데이터를 담고 있는 Heap 영역은 디스크 곳곳에 흩어져 있기 때문에, 인덱스에서 찾은 TID를 따라갈 때마다 랜덤한 디스크 점프 및 I/O 비용이 누적되기 때문입니다.***
+<br />
+
+#### 문제 해결
+
+테이블을 인덱스 기준으로 물리적으로 정렬하는 CLUSTER 명령어가 제일 먼저 떠올랐으나, DB 부하와 Lock을 고려해 진행하지 않았습니다. 대신 ****Index Only Scan을 활용하는 방법이 떠올라 아래와 같이 테스트해보았습니다.
+
+```sql
+-- Index Only Scan 용 인덱스 추가
+CREATE INDEX test_index_only_scan_idx 
+ON test (name, status, field, hash, menu, id);
+
+-- 쿼리 실행 결과
+Index Only Scan using test_index_only_scan_idx on test (cost=0.43..225.32 rows=10 width=4) (actual time=0.025..0.074 rows=10 loops=1)
+  Index Cond: ((name = 'name'::text) AND (status = 'status') AND (field = 'field'::text) AND (hash = 'hash'::text) AND (menu = 'menu'::text))
+  Heap Fetches: 0
+Planning Time: 0.110 ms
+Execution Time: 0.103 ms
+```
+
+효과는 극적이였지만, 동일한 조건의 쿼리 하나만을 위해 단순히 컬럼 하나를 추가한 중복 인덱스를 생성하는 것은 디스크 용량 증가나 쓰기 성능 저하 등의 부담이 크다고 판단했습니다.
+따라서 `ORDER BY name, status` 절을 활용해 인덱스와 정렬 방향을 일치시키면, PSQL 옵티마이저가 기존 인덱스를 활용하도록 유도할 수 있지 않을까 하는 생각에 아래와 같이 시도해보게 되었습니다.
+
+```sql
+-- 개선 후 쿼리
+EXPLAIN SELECT
+        id
+FROM
+        test
+WHERE
+        name = 'name' AND
+        status = 'status' AND
+        field = 'field' AND
+        hash = 'hash' AND
+        menu = 'menu'
+ORDER BY
+        name, status
+LIMIT 10;
+
+-- 개선 후 쿼리 실행 결과
+Limit  (cost=0.43..16.86 rows=10 width=59) (actual time=0.477..0.482 rows=10 loops=1)
+   ->  Index Scan using wallet_account_platform_available_idx on wallet_account  (cost=0.43..386765.28 rows=235499 width=59) (actual time=0.477..0.480 rows=10 loops=1)
+         Index Cond: ((platform = 'ETH'::text) AND (available = true))
+ Planning Time: 0.121 ms
+ Execution Time: 0.503 ms
+```
+
+결과적으로, 실제로 PSQL이 의도한 대로 Index Scan을 수행하는 것을 확인했으며, 다음과 같은 성능 개선 효과를 확인할 수 있었습니다.
+
+- 서버 기준 실행 시간 493ms → 24ms
+- 로컬 기준 실행 시간 665ms → 33ms
