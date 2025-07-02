@@ -1,7 +1,7 @@
 ---
-id: '009-psql-slow-query-02'
+id: '010-psql-slow-query-02'
 title: '[PostgreSQL] 슬로우 쿼리 탐방기 - 인덱스가 무시되는 경우'
-date: '2025-06-25'
+date: '2025-07-02'
 description: '인덱스가 무시되는 경우 PSQL 옵티마이저를 고려하여 기존 쿼리를 개선해보기'
 ---
 
@@ -49,7 +49,7 @@ FROM
         test
 WHERE
         name = 'name' AND
-        status = 'status' AND
+        status = true AND
         field = 'field' AND
         hash = 'hash' AND
         menu = 'menu'
@@ -58,11 +58,10 @@ LIMIT 10;
 -- 개선 전 쿼리 실행 결과
 Limit (cost=0.00..8.47 rows=10 width=54) (actual time=665.355..665.359 rows=10 loops=1)
    ->  Seq Scan on test (cost=0.00..199438.52 rows=235499 width=54) (actual time=665.354..665.357 rows=10 loops=1)
-         Filter: ((name = 'new_name'::text) AND (status = 'status'::text) AND (field = 'field'::text) AND (hash = 'hash'::text) AND (menu = 'menu'::text))
+         Filter: ((name = 'new_name'::text) AND (status = true) AND (field = 'field'::text) AND (hash = 'hash'::text) AND (menu = 'menu'::text))
          Rows Removed by Filter: 4372302
  Planning Time: 0.106 ms
  Execution Time: 665.381 ms
-
 ```
 해당 쿼리는 인덱스 조건을 전부 충족함에도 인덱스를 사용하지 않고 Seq Scan을 사용했으며, 위와 같은 분석 결과를 확인할 수 있었습니다. (실제 서버에서 평균 실행 시간 = 493 ms)
 <br />
@@ -99,19 +98,22 @@ Index 자체는 정렬되어 있어도, 실제 데이터를 담고 있는 Heap �
 
 ```sql
 -- Index Only Scan 용 인덱스 추가
-CREATE INDEX test_index_only_scan_idx 
-ON test (name, status, field, hash, menu, id);
+CREATE INDEX test_index_only_scan_idx ON test (name, status, field, hash, menu, id);
 
 -- 쿼리 실행 결과
 Index Only Scan using test_index_only_scan_idx on test (cost=0.43..225.32 rows=10 width=4) (actual time=0.025..0.074 rows=10 loops=1)
-  Index Cond: ((name = 'name'::text) AND (status = 'status') AND (field = 'field'::text) AND (hash = 'hash'::text) AND (menu = 'menu'::text))
+  Index Cond: ((name = 'name'::text) AND (status = true) AND (field = 'field'::text) AND (hash = 'hash'::text) AND (menu = 'menu'::text))
   Heap Fetches: 0
 Planning Time: 0.110 ms
 Execution Time: 0.103 ms
 ```
 
-효과는 극적이였지만, 동일한 조건의 쿼리 하나만을 위해 단순히 컬럼 하나를 추가한 중복 인덱스를 생성하는 것은 디스크 용량 증가나 쓰기 성능 저하 등의 부담이 크다고 판단했습니다.
-따라서 `ORDER BY name, status` 절을 활용해 인덱스와 정렬 방향을 일치시키면, PSQL 옵티마이저가 기존 인덱스를 활용하도록 유도할 수 있지 않을까 하는 생각에 아래와 같이 시도해보게 되었습니다.
+효과는 확실했지만, 동일한 조건을 가진 단일 쿼리를 위해 단순히 컬럼 하나만 추가된 중복 인덱스를 생성하는 것은 디스크 용량 증가나 쓰기 성능 저하 등의 반동을 고려했을 때 부담이 크다고 판단했습니다.<br />
+
+이에 따라 다른 접근 방법을 고민하던 중, `ORDER BY name, status` 절을 사용해 결과 row 정렬 방향을 기존 인덱스와 일치시킴으로써 PostgreSQL 옵티마이저가 기존 인덱스를 활용하도록 유도할 수 있지 않을까 하는 아이디어가 떠올랐습니다.
+또한 `status` 컬럼이 BOOLEAN 타입이였고 `PSQL에서 BOOLEAN 타입의 인덱스 정렬 기본 순서가 false → true인 점`을 고려해보았을때, `ORDER BY name, status DESC` 로 정렬 방향을 조정하면 기존 인덱스를 활용할 가능성이 높아질 것으로 판단했습니다.
+
+위 과정을 통해 쿼리를 구성해보았고 아래와 같이 결과를 얻게 되었습니다.
 
 ```sql
 -- 개선 후 쿼리
@@ -121,12 +123,12 @@ FROM
         test
 WHERE
         name = 'name' AND
-        status = 'status' AND
+        status = true AND
         field = 'field' AND
         hash = 'hash' AND
         menu = 'menu'
 ORDER BY
-        name, status
+        name, status DESC
 LIMIT 10;
 
 -- 개선 후 쿼리 실행 결과
