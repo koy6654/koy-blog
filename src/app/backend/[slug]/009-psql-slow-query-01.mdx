@@ -104,5 +104,10 @@ WHERE
 ```sql
 CREATE INDEX test_name_status_idx ON test USING btree(name, status, total);
 ```
-<br />
-결과적으로, 두 번 수행되던 UPDATE 쿼리를 한 번으로 통합하고 평균 실행 시간을 259ms에서 3.24ms로 단축함으로써, 총 실행 시간을 `518ms → 3.24ms`로 개선할 수 있었습니다.
+
+---
+
+## 핵심 요약 및 결론
+
+요약하자면, 공통 조건을 가진 중복 UPDATE 쿼리를 `UPDATE CASE WHEN` 을 통해 한번의 쿼리로 줄일 수 있었습니다.
+그리고 두 번 수행되던 UPDATE 쿼리를 한 번으로 통합하고 평균 실행 시간을 259ms에서 3.24ms로 단축함으로써, 총 실행 시간을 `518ms → 3.24ms`로 개선할 수 있었습니다.

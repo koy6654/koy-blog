@@ -58,7 +58,7 @@ const MdxComponents = {
     <h6 className="text-base font-semibold mt-1 mb-1" {...props} />
   ),
   p: (props: React.HTMLAttributes<HTMLParagraphElement>) => <p className="mt-2 mb-0 text-base" {...props} />,
-  ul: (props: React.HTMLAttributes<HTMLUListElement>) => <ul className="list-disc mt-2 mb-4" {...props} />,
+  ul: (props: React.HTMLAttributes<HTMLUListElement>) => <ul className="list-disc mt-2 mb-4 space-y-2" {...props} />,
   ol: (props: React.HTMLAttributes<HTMLOListElement>) => <ol className="list-decimal mt-2 mb-4" {...props} />,
   li: (props: React.HTMLAttributes<HTMLLIElement>) => <li className="ml-4" {...props} />,
   strong: (props: React.HTMLAttributes<HTMLElement>) => <strong className="font-semibold" {...props} />,
@@ -71,7 +71,10 @@ const MdxComponents = {
     <blockquote className="border-l-4 pl-4 italic text-black dark:text-gray-400 mt-4 mb-4" {...props} />
   ),
   code: (props: React.HTMLAttributes<HTMLElement>) => (
-    <code className="bg-[#e2e2e2] text-[#0d0d0d] p-1 rounded dark:bg-[#424242] dark:text-[#FFFFFF]" {...props} />
+    <code
+      className="bg-[#e2e2e2] text-[#0d0d0d] px-1 py-[0.5px] rounded dark:bg-[#424242] dark:text-[#FFFFFF]"
+      {...props}
+    />
   ),
   pre: (props: React.HTMLAttributes<HTMLElement>) => {
     return <CodeBlock>{props.children}</CodeBlock>;

@@ -58,6 +58,8 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
       setTotalPageGroup(totalGroups);
     };
 
+    setIsLoadingMdxList(true);
+
     fetchMdxList();
   }, [cursor]);
 

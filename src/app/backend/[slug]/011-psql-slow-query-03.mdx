@@ -1,0 +1,217 @@
+---
+id: '011-psql-slow-query-03'
+title: '[PostgreSQL] 슬로우 쿼리 탐방기 - LIKE 조건에 인덱스를 적용해보기'
+date: '2025-07-05'
+description: 'PSQL LIKE 조건에 인덱스를 적용하기 위해 B-tree, GIN, GiST 인덱스를 비교 분석해보기'
+---
+
+# [PostgreSQL] 슬로우 쿼리 탐방기 - LIKE 조건에 인덱스를 적용해보기
+
+## 개요
+
+SRE 업무를 수행하면서 서비스 안정성 향상을 위한 쿼리 성능 모니터링 및 최적화 작업을 진행하게 되었습니다.
+
+그중에서도 `LIKE` 조건을 사용한 쿼리에서 슬로우 쿼리가 발생한 사례를 조사하게 되었고, `LIKE` 조건도 상황에 따라 다양한 형태의 인덱스가 적용된다는 사실을 확인할 수 있었습니다. 이에 관련 내용을 정리해보고 공유하고자 합니다.
+
+---
+
+## LIKE 조건이란
+
+LIKE 조건에서 일반적으로 사용하는 와일드 카드 패턴은 두 종류(`%, _`) 정도가 있으며, 다음과 같은 의미를 가집니다.
+
+- `%`는 아무 글자 0개 이상 (`'a%'` → `'apple'`, `'a'`, `'abc'` 매치됨)
+- `_`는 아무 글자 정확히 1개 (`'a_'` → `'ab'`, `'ac'`는 매치, `'acc'`는 안 됨)
+
+이 패턴들을 사용하여 LIKE 조건을 다음과 같은 형태로 사용할 수 있습니다.
+
+- `%test, _test`
+- `test%, test_`
+- `%test%, _test_`
+- `te%st, te_st`
+
+---
+
+## 문제 분석
+
+위 케이스 중 `%` 를 사용한 `WHERE some_column LIKE ‘%test’` 형태의 쿼리가 슬로우 쿼리(289ms)로 검출되었습니다.
+
+기존에는 B-tree 인덱스만 사용했기 때문에 `LIKE 'test%'`와 같은 패턴에는 Index Scan이 적용되었지만, `LIKE '%test'`처럼 와일드 카드가 앞쪽에 붙은 패턴에는 Index Scan이 적용되지 않아 성능 저하가 발생한 상황이였습니다.
+
+이에 따라 `LIKE '%test'` 조건에서도 Index Scan을 유도하기 위해 아래 같은 해결 방안을 검토하였습니다.
+
+---
+
+## 해결방안 검토
+
+#### 기존의 B-Tree Index를 Reverse로 활용하는 방법
+
+B-Tree 인덱스는 `%`가 뒤에 붙는 조건에 대해서 인덱스를 활용할 수 있다는 점을 기반으로, 기존 컬럼 값을 역순으로 저장한 컬럼을 추가하고, 이를 대상으로 인덱스를 생성하여 `%` 가 앞에 붙는 조건 검색을 최적화하는 방안을 검토하였습니다.
+
+해당 방식의 적용 과정은 아래 예시를 통해 확인할 수 있습니다.
+
+```sql
+-- 기존 테이블 구조
+CREATE TABLE test (
+  data TEXT
+);
+
+-- 역순 컬럼 생성
+ALTER TABLE test ADD COLUMN data_reversed TEXT;
+
+-- 역순 데이터 생성
+UPDATE test SET data_reversed = REVERSE(data);
+
+-- 역순 컬럼에 대한 인덱스 생성
+CREATE INDEX test_data_reversed_idx ON test(data_reversed);
+
+-- 쿼리 실행 및 검증
+EXPLIAN ANALYZE SELECT * FROM test WHERE data_reversed LIKE REVERSE('%test');
+```
+
+```bash
+                                                             QUERY PLAN
+------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on test  (cost=310.13..36416.98 rows=14995 width=51) (actual time=0.064..0.065 rows=0 loops=1)
+   Filter: (data_reversed ~~ 'tset%'::text)
+   ->  Bitmap Index Scan on test_data_reverse_idx  (cost=0.00..306.38 rows=14995 width=0) (actual time=0.059..0.060 rows=0 loops=1)
+         Index Cond: ((data_reversed >= 'tset'::text) AND (data_reversed < 'tseu'::text))
+ Planning Time: 1.016 ms
+ Execution Time: 0.098 ms
+(6개 행)
+```
+<br />
+
+#### 새로운 GIN, GiST 인덱스를 활용하는 방법
+
+**GIN 인덱스란**
+
+GIN 인덱스는 포함 여부를 빠르게 판단하는 데 최적화된 역색인 구조로 단어 검색, 배열, JSON, 부분 문자열 검색 등에 주로 사용됩니다. 예를 들면, `LIKE '%test%'`, `@>`, `@@` 와 같은 연산자에 적합합니다.
+<br />
+
+**GiST 인덱스란**
+
+GiST 인덱스는 범위나 유사도 기반 검색을 위한 트리 구조로 공간 정보, 거리 기반 정렬, 배타적 제약조건 등에 활용되며, 주로 위치 기반 검색이나 값 간의 근접성 판단이 필요한 경우에 적합합니다.
+<br />
+
+**GIN 인덱스 vs GiST 인덱스**
+
+| **특징** | **GIN** | **GiST** |
+| --- | --- | --- |
+| **LIKE '%text%' 검색 속도** | ✅ 빠름 | 🔹 가능하지만 GIN보다 느림 |
+| **정확한 일치 검색 (`=`)** | ✅ 빠름 | ❌ 상대적으로 느림 |
+| **범위 검색 (`>`, `<`, `BETWEEN`)** | ❌ 불가능 | ✅ 가능 |
+| **정규식 검색 (`~`)** | ✅ 빠름 | 🔹 가능하지만 GIN이 더 빠름 |
+| **인덱스 크기** | 🔺 큼 | ✅ 작음 |
+| **INSERT/UPDATE 속도** | ❌ 느림 | ✅ 빠름 |
+| **공간 검색(PostGIS)** | ❌ 지원 안 함 | ✅ 가능 |
+| **벡터 검색(코사인 유사도)** | ❌ 지원 안 함 | ✅ 가능 |
+
+즉, 텍스트 기반의 포함 여부 검색에는 GIN 인덱스가, 벡터나 범위 기반의 유사도·근접성 검색에는 GiST 인덱스가 적합합니다.
+<br />
+
+**GIN, GiST 인덱스 검증**
+
+GIN 인덱스 검증 결과는 다음과 같습니다.
+
+```sql
+-- GIN 인덱스를 위한 Extension 추가
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- GIN 인덱스 추가
+CREATE INDEX test_data_gin_idx ON test USING GIN (data gin_trgm_ops);
+
+-- 쿼리 실행 및 검증
+EXPLAIN ANALYZE SELECT * FROM test WHERE data LIKE '%test';
+```
+
+```bash
+                                                         QUERY PLAN
+-----------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on test  (cost=86.32..1169.88 rows=300 width=19) (actual time=0.048..0.049 rows=0 loops=1)
+   Recheck Cond: (data ~~ '%test'::text)
+   ->  Bitmap Index Scan on test_data_gin_idx  (cost=0.00..86.25 rows=300 width=0) (actual time=0.048..0.048 rows=0 loops=1)
+         Index Cond: (data ~~ '%test'::text)
+ Planning Time: 0.910 ms
+ Execution Time: 0.059 ms2**0**1
+```
+
+GiST 인덱스 검증 결과는 다음과 같습니다.
+
+```sql
+-- GiST 인덱스를 위한 Extension 추가
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- GiST 인덱스 추가
+CREATE INDEX test_data_gist_idx ON test USING GIST (data gist_trgm_ops);
+
+-- 쿼리 실행 및 검증
+EXPLAIN ANALYZE SELECT * FROM test WHERE data LIKE '%test';
+```
+
+```bash
+                                                            QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on test  (cost=18.74..1102.30 rows=300 width=19) (actual time=115.017..115.017 rows=0 loops=1)
+   Recheck Cond: (data ~~ '%test'::text)
+   ->  Bitmap Index Scan on test_data_gist_idx  (cost=0.00..18.66 rows=300 width=0) (actual time=115.013..115.013 rows=0 loops=1)
+         Index Cond: (data ~~ '%test'::text)
+ Planning Time: 0.931 ms
+ Execution Time: 115.140 ms
+```
+<br />
+
+#### 각 인덱스 용량 비교
+
+또한, 인덱스 선택에 따른 저장 공간과 유지 비용을 고려하기 위해, 아래와 같이 각 인덱스별 용량을 비교 분석하였습니다.
+
+```sql
+-- 분석 정확도를 높이기 위한 테이블 정리
+VACUUM FULL test;
+
+-- 테이블 및 인덱스 크기 측정 쿼리 실행
+SELECT
+    pg_size_pretty(pg_relation_size('test')) AS table_only_size,
+    pg_size_pretty(pg_indexes_size('test')) AS index_size,
+    pg_size_pretty(pg_total_relation_size('test')) AS total_size;
+```
+
+원본 테이블
+
+```bash
+ table_only_size | index_size | total_size
+-----------------+------------+------------
+ 148 MB          | 64 MB      | 212 MB
+```
+
+기존의 B-Tree Index를 Reverse로 활용할 시
+
+```bash
+ table_only_size | index_size | total_size
+-----------------+------------+------------
+ 191 MB          | 124 MB     | 314 MB
+```
+
+GIN 인덱스 사용 시
+
+```bash
+ table_only_size | index_size | total_size
+-----------------+------------+------------
+ 148 MB          | 156 MB     | 304 MB
+```
+
+GiST 인덱스 사용 시
+
+```bash
+ table_only_size | index_size | total_size
+-----------------+------------+------------
+ 148 MB          | 353 MB     | 500 MB
+```
+
+---
+
+## 핵심 요약 및 결론
+
+요약하자면, `WHERE some_column LIKE '%test'`와 같은 텍스트 패턴 검색 쿼리에는 B-tree, GiST, GIN 인덱스 중 `GIN 인덱스를 사용하는 것이 가장 적합`하다는 점을 확인했습니다.
+또한 인덱스 용량까지 함께 분석한 결과, 성능과 저장 효율 측면에서 GIN 인덱스가 가장 균형 잡힌 선택이라고 판단하여 최종적으로 적용했습니다.
+
+그리고 실제로 서버 평균 응답 시간이 289ms → 17.6ms로 개선된 것을 확인했습니다.

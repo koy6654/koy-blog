@@ -28,21 +28,11 @@ export const LoadingContent = () => {
   );
 };
 
-const LoadingSidebar = () => {
-  return (
-    <div className="flex flex-col justify-start items-center">
-      <Skeleton className="h-8 w-full mb-3 rounded-md" />
-      <Skeleton className="h-8 w-full mb-3 rounded-md" />
-      <Skeleton className="h-8 w-full mb-3 rounded-md" />
-      <Skeleton className="h-8 w-full mb-3 rounded-md" />
-    </div>
-  );
-};
-
 export const LoadingMdxList = () => {
   return (
     <div className="flex flex-col justify-start items-center">
       <div className="w-full rounded-lg shadow-lg p-4">
+        <Skeleton className="w-full h-36 mb-8" />
         <Skeleton className="w-full h-36 mb-8" />
         <Skeleton className="w-full h-36 mb-8" />
         <Skeleton className="w-full h-36 mb-8" />
