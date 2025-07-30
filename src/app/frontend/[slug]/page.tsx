@@ -5,7 +5,7 @@ async function FrontendMdxViewerPage({ params }: MdxViewerSlug) {
 
   return (
     <div>
-      <main className="max-w-[940px] flex flex-col p-10 sm:p-20">
+      <main className="mx-auto flex flex-col p-10 sm:p-20">
         <MdxViewer page={page} />
       </main>
     </div>

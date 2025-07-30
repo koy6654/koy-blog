@@ -79,7 +79,7 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
 
   if (isLoadingMdxList) {
     return (
-      <main className="max-w-[940px] flex flex-col p-10 sm:p-20">
+      <main className="w-full flex flex-col p-10 sm:p-20">
         <LoadingMdxList />
       </main>
     );
@@ -87,7 +87,7 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
 
   if (isLoadingMdxContent) {
     return (
-      <main className="max-w-[940px] flex flex-col p-10 sm:p-20">
+      <main className="w-full flex flex-col p-10 sm:p-20">
         <LoadingContent />
       </main>
     );

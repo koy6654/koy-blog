@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { RecoilProvider } from '@/components/providers/recoil-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import localFont from 'next/font/local';
@@ -25,6 +25,12 @@ export const metadata: Metadata = {
   title: 'Koy Blog',
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,7 +45,7 @@ export default function RootLayout({
             <Divider orientation="horizontal" />
             <div className="flex flex-row min-h-screen">
               <SideBar />
-              <main className="w-full">{children}</main>
+              <main className="w-full min-w-0">{children}</main>
               <AdBar />
             </div>
             <Divider orientation="horizontal" />
