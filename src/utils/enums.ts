@@ -17,6 +17,7 @@ export enum MdxFiles {
   PSQL_SLOW_QUERY_01 = '009-psql-slow-query-01',
   PSQL_SLOW_QUERY_02 = '010-psql-slow-query-02',
   PSQL_SLOW_QUERY_03 = '011-psql-slow-query-03',
+  MONOREPO_TO_POLYREPO = '012-monorepo-to-polyrepo',
 
   // INFRA
   DOCKER_KUBENETES_TUTORIAL = 'docker-kubenetes-install',
