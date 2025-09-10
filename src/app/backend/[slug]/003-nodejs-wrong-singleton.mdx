@@ -6,9 +6,7 @@ description: 'Node.js에서 잘못된 싱글톤 패턴을 사용하다가 RangeE
 ---
 
 # [Node.js] 잘못된 싱글톤 패턴으로 발생한 RangeError 해결하기
-<MdxDivider />
 
-## 개요
 Node.js 환경에서 잘못된 싱글톤 패턴 코드를 방치하고 서비스 코드에서 사용하던 중, 순환 참조로 인해 ***RangeError: Maximum call stack size exceeded*** 에러를 만나게 되었습니다. 
 따라서 해당 에러의 원인을 분석해보고 임시로 해결해보고자 합니다.
 

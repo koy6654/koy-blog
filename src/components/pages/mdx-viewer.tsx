@@ -40,7 +40,7 @@ const MdxComponents = {
     </>
   ),
   h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
-    <h1 className="text-4xl font-bold mt-6 mb-4 leading-tight" {...props} />
+    <h1 className="text-4xl font-bold mt-6 mb-12 leading-tight" {...props} />
   ),
   h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
     <h2 className="text-3xl font-semibold mt-5 mb-3" {...props} />

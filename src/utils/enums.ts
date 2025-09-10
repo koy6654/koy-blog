@@ -3,7 +3,8 @@ export enum MdxFiles {
   CAREER = 'career',
 
   // FRONTEND
-  MDX_TUTORIAL = 'mdx-tutorial',
+  MDX_TUTORIAL = '001-mdx-tutorial',
+  USER_RESOURCE_USAGE = '002-user-resource-usage',
 
   // BACKEND
   NODEJS_FUNCTION_OVERLOADING = '001-nodejs-function-overloading',
@@ -20,7 +21,7 @@ export enum MdxFiles {
   MONOREPO_TO_POLYREPO = '012-monorepo-to-polyrepo',
 
   // INFRA
-  DOCKER_KUBENETES_TUTORIAL = 'docker-kubenetes-install',
-  KUBERNETES_DESCRIPTION = 'kubernetes-description',
-  KUBERNETES_LOCAL_INGRESS = 'kubernetes-local-ingress',
+  DOCKER_KUBENETES_TUTORIAL = '001-docker-kubenetes-install',
+  KUBERNETES_DESCRIPTION = '002-kubernetes-description',
+  KUBERNETES_LOCAL_INGRESS = '003-kubernetes-local-ingress',
 }
