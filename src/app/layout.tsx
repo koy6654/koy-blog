@@ -22,7 +22,15 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Koy Blog',
+  verification: {
+    google: 'google-site-verification=YagmCLzmi83zPoQ8vd4fQ6OHPsiNjYdkGWSyhMmViSo',
+  },
+  title: {
+    template: '%s | Koy Blog',
+    default: 'Koy Blog',
+  },
+  description: '개발과 성장에 대한 생각을 공유하는 기술 블로그입니다.',
+  metadataBase: new URL('https://koy-blog.vercel.app'),
 };
 
 export const viewport: Viewport = {
