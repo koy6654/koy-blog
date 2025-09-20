@@ -1,13 +1,13 @@
+import { BASE_DOMAIN } from '@/utils/constants';
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = 'https://koy-blog.vercel.app';
-
   return {
     rules: {
       userAgent: '*',
       allow: '/',
+      disallow: '',
     },
-    sitemap: `${siteUrl}/sitemap.xml`,
+    sitemap: `${BASE_DOMAIN}/sitemap.xml`,
   };
 }

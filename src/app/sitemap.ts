@@ -1,33 +1,39 @@
 import { MetadataRoute } from 'next';
-import { getPostFilePaths } from '@/utils/functions/gray-matter';
-import path from 'path';
-import fs from 'fs';
+import { getPostFileDataByPath, getPostFilePaths } from '@/utils/functions/gray-matter';
+import { BASE_DOMAIN, PAGES } from '@/utils/constants';
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const siteUrl = 'https://koy-blog.vercel.app';
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const staticRoutes = [];
+  const postRoutes = [];
 
-  const staticRoutes = [
-    '/',
-    '/career',
-    '/backend',
-    '/frontend',
-    '/infra',
-  ].map((route) => ({
-    url: `${siteUrl}${route}`,
-    lastModified: new Date().toISOString(),
-  }));
+  const pageValues = Object.values(PAGES);
 
-  const postPaths = getPostFilePaths();
-  const postRoutes = postPaths.map((filePath) => {
-    const slug = path.basename(filePath, '.mdx');
-    const category = path.basename(path.dirname(filePath));
-    const stats = fs.statSync(filePath);
+  for (const pageValue of pageValues) {
+    const staticRouteDates = [];
 
-    return {
-      url: `${siteUrl}/${category}/${slug}`,
-      lastModified: stats.mtime.toISOString(),
-    };
-  });
+    const paths = getPostFilePaths(pageValue);
+
+    for (const path of paths) {
+      const fileData = await getPostFileDataByPath(path);
+      const frontMatter = fileData.data;
+
+      const frontMatterDate = new Date(frontMatter.date).toISOString();
+
+      staticRouteDates.push(frontMatterDate);
+
+      postRoutes.push({
+        url: `${BASE_DOMAIN}/${pageValue}/${frontMatter.id}`,
+        lastModified: frontMatterDate,
+      });
+    }
+
+    const lastModified = staticRouteDates.reduce((a, b) => (new Date(a) > new Date(b) ? a : b));
+
+    staticRoutes.push({
+      url: `${BASE_DOMAIN}/${pageValue}`,
+      lastModified: lastModified,
+    });
+  }
 
   return [...staticRoutes, ...postRoutes];
 }
