@@ -1,0 +1,550 @@
+---
+id: '004-aws-3tier-architecture'
+title: '[AWS] 3-Tier 아키텍처 구현하기'
+date: '2025-11-06'
+description: 'AWS 리소스(VPC·서브넷·보안그룹·EC2·RDS)를 사용해, 3-Tier 아키텍처(Web, App, DB)를 직접 구축하고 테스트 해보기'
+---
+
+# [AWS] 3-Tier 아키텍처 구현하기
+
+웹 서비스 인프라를 구축할 때, 가장 보편적으로 사용되는 구조 중 하나가 바로 3-Tier 아키텍처입니다.<br />
+이번 포스팅에서는 3-Tier 아키텍처의 개념을 이해하고, AWS에서 직접 구현 및 테스트 해본 과정을 공유하려고 합니다.
+
+---
+
+## 3-Tier 아키텍처란
+
+#### 개념 정리
+
+3-Tier 아키텍처는 클라우드가 등장하기 전부터 엔터프라이즈 시스템에서 널리 사용되어 온 전통적인 인프라 설계 방식입니다.
+
+해당 방식은 하나의 서비스를 Web, Application, Database라는 세 가지 계층으로 나누어 구성하며,<br />
+각 계층은 독립적으로 동작하기 때문에 시스템의 유지보수성과 확장성을 극대화할 수 있습니다.
+<br /><br />
+
+#### Tier별 정의
+**Web Tier**
+
+Web Tier는 사용자 요청을 가장 먼저 받는 계층입니다.
+
+이 계층은 Public Subnet에 배치되어 외부 인터넷과 직접 통신할 수 있으며,<br />
+사용자의 요청을 받아 App Tier로 전달하는 역할을 수행합니다.
+
+대표적인 예시로는 프론트엔드 서버, Bastion Host(관리용 게이트웨이 서버) 등이 있습니다.
+
+*ALB(로드 밸런서)를 추가하여 트래픽을 여러 인스턴스로 분산시킬 수도 있습니다.*
+<br />
+
+**App Tier**
+
+App Tier는 서비스의 비즈니스 로직을 처리하는 계층입니다.
+
+이 계층은 Private Subnet에 배치되어 외부와의 직접적인 연결은 차단되며,<br />
+Web Tier로부터 요청을 받아 DB Tier의 데이터를 토대로 비즈니스 로직을 처리합니다.<br />
+
+즉, Web Tier와 DB Tier의 중간 역할을 수행하며, 대표적인 예시로는 백엔드 서버가 있습니다.
+<br />
+
+**DB Tier**
+
+DB Tier는 데이터를 저장하고 관리하는 계층입니다.
+
+이 계층도 Private Subnet에 배치시키고, 오직 App Tier에서만 접근이 가능하도록 보안 그룹을 설정하여 외부 접근을 완전히 차단시키고 보안을 강화합니다.
+
+대표적인 예시로 RDS, ElastiCache 등이 있습니다.
+
+---
+
+## AWS 3-Tier 아키텍처 구축해보기
+
+앞서 살펴본 개념을 바탕으로, AWS에서 3-Tier 아키텍처를 실제로 구현해보겠습니다.<br />
+요청 흐름을 도식화 시키면 아래와 같습니다.
+
+```bash
+┌─────────────────────────────────────────┐
+│  Internet                               │
+└──────────────┬──────────────────────────┘
+               │
+        ┌──────▼───────┐
+        │  Web Tier    │  (Public Subnet)
+        │  - Frontend  │
+        │  - Bastion   │
+        └──────┬───────┘
+               │
+        ┌──────▼───────┐
+        │  App Tier    │  (Private Subnet)
+        │  - Backend   │
+        └──────┬───────┘
+               │
+        ┌──────▼───────┐
+        │  DB Tier     │  (Private Subnet)
+        │  - RDS       │
+        └──────────────┘
+```
+<br /><br />
+
+#### 1. VPC 생성
+
+VPC(Virtual Private Cloud) 는 AWS에서 제공하는 가상 네트워크 환경으로, 사용자가 직접 제어할 수 있는 독립된 네트워크 공간을 의미합니다.
+
+VPC를 생성할 때는 IPv4 CIDR 블록을 지정하여 해당 VPC에서 사용할 수 있는 IP 주소 범위를 설정합니다.
+
+따라서 아래와 같이 IPv4 CIDR을 설정하여 VPC를 생성할 수 있습니다.
+<br />
+*IPv4 CIDR 은 `[네트워크의 시작 주소]/[서브넷 마스크]` 형식으로 표현되며, 예를 들어 `10.255.0.0/16`은 `10.255.0.0 ~ 10.255.255.255` 까지의 IP 주소 범위를 사용할 수 있음을 나타냅니다.*
+<br />
+![1.png](/images/004-aws-3tier-architecture-1.png)
+<br />
+| **이름 태그** | IPv4 CIDR 블록 | IPv4 CIDR | IPv6 CIDR 블록 |
+| --- | --- | --- | --- |
+| koy-vpc | IPv4 CIDR 수동 입력 | 10.255.0.0/16 | IPv6 CIDR 블록 없음 |
+<br /><br />
+
+#### 2. Subnet 생성
+
+Subnet은 VPC 안에서 IP 주소 범위를 나누는 네트워크의 하위 단위이자, VPC를 역할 및 보안등급 별로 잘게 쪼개놓은 네트워크 공간입니다.
+
+Subnet을 생성하기 전 알아두면 좋은 정보들이 있습니다. 바로 가용영역(AZ)과 ALB(Application Load Balancer)입니다.<br />
+AZ란 서로 물리적으로 독립된 데이터센터를 의미하며, 하나의 AZ에 장애가 발생하더라도 다른 AZ에서 서비스가 지속될 수 있도록 설계되어 있습니다.<br />
+ALB는 AWS에서 제공하는 HTTP·HTTPS 로드 밸런서로, 여러 인스턴스나 서비스로 요청 트래픽을 분산 처리하는 서비스입니다.
+
+따라서 Subnet을 생성할 때는 ALB 구성과 고가용성을 고려하여 최소 2개 이상의 AZ에 Subnet을 구성하는 것을 권장하기에, 다음과 같이 Tier 별로 2개씩 Subnet을 생성해보겠습니다.
+
+![2.png](/images/004-aws-3tier-architecture-2.png)
+<br />
+**Public Subnet (Web Tier)**
+
+|  VPC ID | 서브넷 이름 | **가용 영역** | IPv4 서브넷 CIDR 블록 |
+| --- | --- | --- | --- |
+| koy-vpc | koy-web-public-subnet-1a | us-east-1a | 10.255.1.0/24 |
+| koy-vpc | koy-web-public-subnet-1b | us-east-1b | 10.255.2.0/24 |
+
+**Private Subnet (Application Tier)**
+
+|  VPC ID | 서브넷 이름 | **가용 영역** | IPv4 서브넷 CIDR 블록 |
+| --- | --- | --- | --- |
+| koy-vpc | koy-app-private-subnet-1a | us-east-1a | 10.255.11.0/24 |
+| koy-vpc | koy-app-private-subnet-1b | us-east-1b | 10.255.12.0/24 |
+
+**Private Subnet (DB Tier)**
+
+|  VPC ID | 서브넷 이름 | **가용 영역** | IPv4 서브넷 CIDR 블록 |
+| --- | --- | --- | --- |
+| koy-vpc | koy-db-private-subnet-1a | us-east-1a | 10.255.21.0/24 |
+| koy-vpc | koy-db-private-subnet-1b | us-east-1b | 10.255.22.0/24 |
+<br /><br />
+
+#### 3. 인터넷 게이트웨이, 라우팅 테이블 구성
+
+인터넷 게이트웨이(IGW)는 AWS에서 제공하는 논리적 네트워크 구성 요소로, VPC와 외부 인터넷 간의 통신을 가능하게 하는 관문입니다.
+
+라우팅 테이블(Route Table)은 VPC 내에서 네트워크 트래픽이 이동하는 경로를 정의하는 규칙 집합입니다. 즉, “들어온 요청을 어디로 보낼 것인가” 를 결정하는 네트워크의 길잡이입니다.
+
+따라서 아래와 같이 IGW를 생성하고 VPC에 연결한 후, 라우팅 테이블에 IGW로 향하는 경로를 추가해야, Public Subnet의 인스턴스가 인터넷을 통해 외부와 통신할 수 있습니다.
+<br />
+
+**3-1. 인터넷 게이트웨이 생성**
+
+![3.png](/images/004-aws-3tier-architecture-3.png)
+<br />
+
+**3-2. 인터넷 게이트웨이 설정 - VPC에 연결**
+
+`생성된 IGW 클릭 - 작업 - VPC에 연결 클릭`
+<br />
+
+**3-3. 라우팅 테이블 생성**
+
+![4.png](/images/004-aws-3tier-architecture-4.png)
+<br />
+
+**3-4. 라우팅 테이블 설정 - IGW 연결**
+
+`생성된 라우팅 테이블 클릭 - 라우팅 - 라우팅 편집 - 라우팅 추가`
+
+![5.png](/images/004-aws-3tier-architecture-5.png)
+
+| Destination | Target | 설명 |
+| --- | --- | --- |
+| 10.255.0.0/16 | local | 목적지가 VPC(10.255.0.0/16) 범위 내에 있는 트래픽은 VPC 내부 네트워크(local)로 전달됩니다.<br />즉, VPC 내부 트래픽은 내부 네트워크에서 전부 처리됩니다. |
+| 0.0.0.0/0 | 인터넷 게이트웨이 | 인터넷 게이트웨이를 선택합니다. |
+|  | koy-igw | 목적지가 외부 인터넷(0.0.0.0/0)인 트래픽은 IGW(koy-igw)로 전달됩니다. |
+
+*(참고) 라우팅 테이블에서는 아웃바운드 경로만 정의하고, 인바운드 경로는 AWS가 라우팅 테이블의 역방향 경로를 자동으로 처리합니다.*
+<br />
+
+**3-5. 라우팅 테이블 설정 - 서브넷 연결**
+
+`생성된 라우팅 테이블 클릭 - 서브넷 연결 - 명시적 서브넷 연결 - 서브넷 연결 편집`
+
+![6.png](/images/004-aws-3tier-architecture-6.png)
+<br /><br />
+
+#### 4. NAT 게이트웨이, 라우팅 테이블 구성
+
+NAT 게이트웨이는 AWS에서 제공하는 관리형 네트워크 주소 변환 서비스로, Private Subnet이 외부 인터넷과 통신할 수 있도록 하는 중간 관문 역할을 합니다.
+
+`IGW가 Public Subnet과 외부 간의 양방향 통신을 허용`하는 관문이라면, `NAT 게이트웨이는 Private Subnet과 외부 간의 아웃바운드 통신만 허용`하는 단방향 관문입니다.
+
+이제 개념을 정리했으니, NAT 게이트웨이를 Public Subnet에 생성하고, Private Subnet 인스턴스의 아웃바운드 인터넷 트래픽을 중계하도록 구성해보겠습니다.
+<br />
+
+**4-1. Elastic IP 생성**
+
+NAT 게이트웨이에 할당하기 위한 Elastic IP를 생성합니다.
+
+![7.png](/images/004-aws-3tier-architecture-7.png)
+
+| 태그 키 | 태그 값 |
+| --- | --- |
+| Name | koy-nat-gw-eip-1a |
+| Name | koy-nat-gw-eip-1b |
+<br />
+
+**4-2. NAT 게이트웨이 생성**
+
+![8.png](/images/004-aws-3tier-architecture-8.png)
+
+| 이름 | 서브넷 | 연결 유형 | 탄력적 IP 할당 ID |
+| --- | --- | --- | --- |
+| koy-nat-gw-1a | koy-web-public-subnet-1a | 퍼블릭 | koy-nat-gw-eip-1a |
+| koy-nat-gw-1b | koy-web-public-subnet-1b | 퍼블릭 | koy-nat-gw-eip-1b |
+<br />
+
+**4-3. 라우팅 테이블 생성**
+
+AZ별로 2개 생성
+
+![9.png](/images/004-aws-3tier-architecture-9.png)
+
+| 이름 | VPC |
+| --- | --- |
+| koy-private-route-table-1a | koy-vpc |
+| koy-private-route-table-1b | koy-vpc |
+<br />
+
+**4-4. 라우팅 테이블 설정 - NAT 게이트웨이 연결**
+
+생성된 2개의 테이블을 각각 아래와 같이 연결합니다.
+
+`생성된 라우팅 테이블 클릭 - 라우팅 - 라우팅 편집 - 라우팅 추가`
+
+
+![10.png](/images/004-aws-3tier-architecture-10.png)
+
+<br />
+`koy-private-route-table-1a`
+| Destination | Target | 설명 |
+| --- | --- | --- |
+| 10.255.0.0/16 | local | 목적지가 VPC(10.255.0.0/16) 범위 내에 있는 트래픽은 VPC 내부 네트워크(local)로 전달됩니다.<br />즉, VPC 내부 트래픽은 내부 네트워크에서 전부 처리됩니다. |
+| 0.0.0.0/0 | NAT 게이트웨이 | NAT 게이트웨이를 선택합니다. |
+|  | koy-nat-gw-1a | 목적지가 외부 인터넷(0.0.0.0/0)인 트래픽은 NAT 게이트웨이(koy-nat-gw-1a)로 전달됩니다. |
+<br />
+`koy-private-route-table-1b`
+| Destination | Target | 설명 |
+| --- | --- | --- |
+| 10.255.0.0/16 | local | 목적지가 VPC(10.255.0.0/16) 범위 내에 있는 트래픽은 VPC 내부 네트워크(local)로 전달됩니다.<br />즉, VPC 내부 트래픽은 내부 네트워크에서 전부 처리됩니다. |
+| 0.0.0.0/0 | NAT 게이트웨이 | NAT 게이트웨이를 선택합니다. |
+|  | koy-nat-gw-1b | 목적지가 외부 인터넷(0.0.0.0/0)인 트래픽은 NAT 게이트웨이(koy-nat-gw-1b)로 전달됩니다. |
+<br />
+
+**4-5. 라우팅 테이블 설정 - 서브넷 연결**
+
+`생성된 라우팅 테이블 클릭 - 서브넷 연결 - 명시적 서브넷 연결 - 서브넷 연결 편집`
+
+![11.png](/images/004-aws-3tier-architecture-11.png)
+<br />
+`koy-private-route-table-1a`
+| 서브넷 연결 |
+| --- |
+| koy-app-private-subnet-1a |
+| koy-db-private-subnet-1a |
+<br />
+`koy-private-route-table-1b`
+| 서브넷 연결 |
+| --- |
+| koy-app-private-subnet-1b |
+| koy-db-private-subnet-1b |
+<br /><br />
+
+#### 5. 보안그룹 구성
+
+보안그룹(SG)은 AWS에서 제공하는 가상 방화벽으로, 인바운드 및 아웃바운드 규칙을 설정하여 트래픽을 제어합니다.
+
+SG는 개별 리소스 단위로도 적용이 가능하나, 관리 효율성을 높이기 위해 Tier 단위(Web, App, DB)로 구성해보겠습니다.
+<br /><br />
+
+**5-1. 보안 그룹 Web Tier 설정**
+
+**기본 세부 정보**
+
+| 보안 그룹 이름 | VPC |
+| --- | --- |
+| koy-web-sg | koy-vpc |
+<br />
+
+**인바운드 규칙**
+
+| 유형 | 프로토콜 | 포트 범위 | 대상 | 설명 |
+| --- | --- | --- | --- | --- |
+| SSH | TCP | 22 | [내 IP]/32 | 오직 내 IP로만 Bastion SSH 접속이 가능하도록 한다. |
+<br />
+
+**아웃바운드 규칙**
+
+| 유형 | 프로토콜 | 포트 범위 | 대상 | 설명 |
+| --- | --- | --- | --- | --- |
+| SSH | TCP | 22 | koy-app-sg | Bastion 서버에서 App Tier 로 SSH 접속을 허용한다. |
+| HTTP | TCP | 80 | 0.0.0.0/0 | 외부로 HTTP 트래픽을 허용한다. |
+| HTTPS | TCP | 443 | 0.0.0.0/0 | 외부로 HTTPS 트래픽을 허용한다. |
+<br /><br />
+
+**5-2. 보안 그룹 App Tier 설정**
+
+**기본 세부 정보**
+
+| 보안 그룹 이름 | VPC |
+| --- | --- |
+| koy-app-sg | koy-vpc |
+<br />
+
+**인바운드 규칙**
+
+| 유형 | 프로토콜 | 포트 범위 | 대상 | 설명 |
+| --- | --- | --- | --- | --- |
+| SSH | TCP | 22 | koy-web-sg | Bastion SSH 관리 접속을 위해 허용한다. |
+<br />
+
+**아웃바운드 규칙**
+
+| 유형 | 프로토콜 | 포트 범위 | 대상 | 설명 |
+| --- | --- | --- | --- | --- |
+| PostgreSQL | TCP | 5432 | koy-db-sg | DB Tier로 DB 접근을 허용한다. |
+| HTTP | TCP | 80 | 0.0.0.0/0 | 외부로 HTTP 트래픽을 허용한다. |
+| HTTPS | TCP | 443 | 0.0.0.0/0 | 외부로 HTTPS 트래픽을 허용한다. |
+<br /><br />
+
+**5-3. 보안 그룹 DB Tier 설정**
+
+**기본 세부 정보**
+
+| 보안 그룹 이름 | VPC |
+| --- | --- |
+| koy-db-sg | koy-vpc |
+<br />
+
+**인바운드 규칙**
+
+| 유형 | 프로토콜 | 포트 범위 | 대상 | 설명 |
+| --- | --- | --- | --- | --- |
+| PostgreSQL | TCP | 5432 | koy-app-sg | App Tier에서의 DB 접근을 허용한다. |
+<br />
+
+**아웃바운드 규칙**
+
+| 유형 | 프로토콜 | 포트 범위 | 대상 | 설명 |
+| --- | --- | --- | --- | --- |
+| 모든 트래픽 | 전체 | 전체 | 0.0.0.0/0 | RDS는 일반적으로 아웃바운드 연결을 시작하지 않으므로 기본값 유지해도 무방하다. |
+<br /><br />
+
+#### 6. 키 페어 생성
+
+키 페어는 AWS에서 EC2 인스턴스에 안전하게 접속하기 위한 암호화 인증 수단입니다.<br />
+따라서 키 페어를 생성하면 인스턴스에 SSH로 안전하게 접속할 수 있습니다.
+<br />
+
+`EC2 > 키 페어 > 키 페어 생성`
+
+| 이름 | 키 페어 유형 | 프라이빗 키 파일 형식 | 태그 |
+| --- | --- | --- | --- |
+| koy-key-pair | RSA | .pem | koy-key-pair |
+
+*키 페어가 생성되면 즉시 다운로드 됩니다.*
+<br />
+
+다운로드된 `.pem` 파일을 이동
+
+```bash
+mv ~/Downloads/koy-key.pem ~/.ssh/
+```
+<br />
+
+권한 제한
+
+```bash
+chmod 400 ~/.ssh/koy-key.pem
+```
+<br /><br />
+
+
+#### 7. EC2 & RDS 생성
+
+**7-1. 개념 정리**
+
+EC2는 AWS에서 제공하는 가상 서버 서비스로, 사용자가 클라우드 환경에서 컴퓨팅 자원(CPU, 메모리, 스토리지, 네트워크)을 자유롭게 생성하고 실행할 수 있도록 지원합니다.<br />
+따라서 Web Tier와 App Tier 서비스를 구축하기 위해, 각 인스턴스의 스펙을 자신의 상황에 맞게 설정하여 생성합니다.
+
+RDS란, AWS에서 제공하는 완전관리형 데이터베이스 서비스로 PostgreSQL, MySQL 등 주요 데이터베이스를 설치 없이 바로 사용할 수 있도록 지원합니다.<br />
+따라서 DB Tier에서 사용할 PostgreSQL 데이터베이스를 구동하기 위해 RDS 인스턴스를 생성합니다.
+<br /><br />
+
+**7-2. EC2 생성**
+
+**EC2 생성 - Web Tier**
+
+베스천 및 프론트엔드(웹) 구동을 위해 AZ 별로 총 2개의 EC2 인스턴스를 생성합니다.
+
+| 항목 | 값1 | 값2 |
+| --- | --- | --- |
+| 이름 및 태그 | koy-web-client-1a | koy-web-client-1b |
+| 애플리케이션 및 OS 이미지 | Ubuntu 24 | Ubuntu 24 |
+| 인스턴스 유형 | t3.micro | t3.micro |
+| 키 페어 | koy-key-pair | koy-key-pair |
+| 네트워크 설정 - VPC | koy-vpc | koy-vpc |
+| 네트워크 설정 - 서브넷 | koy-web-public-1a | koy-web-public-1b |
+| 네트워크 설정 - 퍼블릭 IP 자동 할당 | 활성화 | 활성화 |
+| 네트워크 설정 - 방화벽(보안 그룹) | 기존 보안 그룹 선택 | 기존 보안 그룹 선택 |
+| 네트워크 설정 - 일반 보안 그룹 | koy-web-sg | koy-web-sg |
+| 스토리지 구성 | 8GIB gp3 | 8GIB gp3 |
+<br />
+
+**EC2 생성 - App Tier**
+
+백엔드 서버 구동을 위해 AZ 별로 총 2개의 EC2 인스턴스를 생성합니다.
+
+| 항목 | 값1 | 값2 |
+| --- | --- | --- |
+| 이름 및 태그 | koy-app-server-1a | koy-app-server-1b |
+| 애플리케이션 및 OS 이미지 | Ubuntu 24 | Ubuntu 24 |
+| 인스턴스 유형 | t3.micro | t3.micro |
+| 키 페어 | koy-key-pair | koy-key-pair |
+| 네트워크 설정 - VPC | koy-vpc | koy-vpc |
+| 네트워크 설정 - 서브넷 | koy-app-private-1a | koy-app-private-1b |
+| 네트워크 설정 - 퍼블릭 IP 자동 할당 | 비활성화 | 비활성화 |
+| 네트워크 설정 - 방화벽(보안 그룹) | 기존 보안 그룹 선택 | 기존 보안 그룹 선택 |
+| 네트워크 설정 - 일반 보안 그룹 | koy-app-sg | koy-app-sg |
+| 스토리지 구성 | 8GIB gp3 | 8GIB gp3 |
+<br /><br />
+
+**7-3. RDS 생성**
+
+**RDS 생성 - DB 서브넷 그룹**
+
+DB 서브넷 그룹은 RDS 인스턴스가 배포될 서브넷의 집합을 정의하는 구성 요소입니다. 일반적으로 서로 다른 AZ의 Subnet 포함해 고가용성을 보장하도록 구성합니다.
+
+`RDS > 서브넷 그룹 > DB 서브넷 그룹 생성`
+
+![12.png](/images/004-aws-3tier-architecture-12.png)
+
+| 이름 | 설명 | VPC | 가용 영역 | 서브넷 |
+| --- | --- | --- | --- | --- |
+| koy-db-subnet-group | - | koy-vpc | us-east-1a
+us-east-1b
+(자신의 서브넷이 포함된 지역) | koy-db-private-subnet-1a
+koy-db-private-subnet-1b |
+<br />
+
+**RDS 생성 - 데이터베이스**
+
+데이터베이스 스펙은 단순 테스트 목적이기에 요금 최소화를 기준으로 진행합니다.
+
+`RDS > 데이터베이스 > 데이터베이스 생성` 
+
+| 항목 | 값 |
+| --- | --- |
+| 데이터베이스 생성 방식 선택 | 표준 생성 |
+| 엔진 옵션 - 엔진 유형 | PostgreSQL |
+| 엔진 옵션 - 엔진 버전 | PostgreSQL 14.19-R2
+(로컬 PostgreSQL 기준) |
+| 템플릿 | 샌드박스 |
+| 가용성 및 내구성 | 단일 AZ DB 인스턴스 배포(인스턴스 1개) |
+| 설정 - DB 인스턴스 식별자 | koy-db-postgres |
+| 설정 - 마스터 사용자 이름 | [Your username] |
+| 설정 - 자격 증명 관리 | 자체 관리 |
+| 설정 - 마스터 암호 | [Your password] |
+| 인스턴스 구성 | db.t4g.micro |
+| 스토리지 | 범용 SSD(gp2) / 20 / 스토리지 자동 조정 활성화 OFF |
+| 연결 - 컴퓨팅 리소스 | EC2 컴퓨팅 리소스에 연결 안 함 |
+| 연결 - 네트워크 유형 | IPv4 |
+| 연결 - VPC | koy-vpc |
+| 연결 - DB 서브넷 그룹 | koy-db-subnet-group |
+| 연결 - 퍼블릭 액세스 | 아니요 |
+| 연결 - VPC 보안 그룹(방화벽) | 기존 항목 선택 |
+| 연결 - 기존 VPC 보안 그룹 | koy-db-sg |
+| 연결 - 가용 영역 | us-east-1a |
+| 태그 | koy-db-postgres |
+| 데이터베이스 인증 | 암호 인증 |
+| 모니터링 | Database Insights - 표준 |
+| 모니터링 - 그 외 옵션 | 모든 옵션 OFF |
+| 추가 구성 - 초기 데이터베이스 이름 | postgres |
+| 추가 구성 - DB 파라미터 그룹 | default.postgres14 |
+| 추가 구성 - 자동 백업 활성화 | OFF |
+| 추가 구성 - 암호화 활성화 | OFF |
+| 추가 구성 - 마이너 버전 자동 업그레이드 사용 | OFF |
+
+---
+
+## 테스트 및 검증
+
+구축한 AWS 3-Tier 아키텍처를 `Local(SSH) → Bastion → Web Tier → App Tier → DB Tier(PostgreSQL)` 순으로 접속하여 테스트하고 검증해보겠습니다.
+<br />
+
+로컬의 키 페어(.pem)를 Web Tier로 복사하고, Web Tier → App Tier → DB Tier 순으로 SSH 접속하여 통신을 검증합니다.
+
+```bash
+# 로컬에서 scp 명령어 입력
+~ ❯ scp -i ~/.ssh/koy-key-pair.pem ~/.ssh/koy-key-pair.pem [ubuntu@](mailto:ubuntu@54.90.66.46)<koy-web-client-1a-public-ip>:~/
+# 로컬에서 Web Tier SSH 접속
+~ ❯ ssh -i ~/.ssh/koy-key-pair.pem ubuntu@<koy-web-client-1a-public-ip>
+
+# Web Tier 접속 확인 완료
+ubuntu@<private-ip>:~$
+# 복사된 .pem 키를 .ssh로 이동 
+ubuntu@<private-ip>:~$ mv ~/koy-key-pair.pem ~/.ssh/
+# Web Tier에서 App Tier SSH 접속
+ubuntu@<private-ip>:~$ ssh -i ~/.ssh/koy-key-pair.pem ubuntu@<koy-app-server-private-ip>
+
+# App Tier 접속 확인 완료
+ubuntu@<private-ip>:~$
+# App Tier 에서 psql 클라이언트를 설치
+ubuntu@<private-ip>:~$ sudo apt-get update && sudo apt-get install -y postgresql-client
+# psql 클라이언트로 DB 접속 확인
+ubuntu@<private-ip>:~$ psql -h <koy-db-postgres-rds-endpoint> -U postgres -d postgres
+
+# DB 접속 후 테스트 완료
+postgres=> select version();
+```
+<br />
+
+또는 `~/.ssh/config` 파일을 설정해놓고, 단일 명령으로 App Tier → DB Tier까지 바로 접근할 수 있습니다.
+
+```bash
+# 로컬 ~/.ssh/config 에 작성
+Host aws-3tier-web
+    HostName <koy-web-client-1a-public-ip>
+    User ubuntu
+    IdentityFile ~/.ssh/koy-key-pair.pem
+    ForwardAgent yes
+
+Host aws-3tier-app
+    HostName <koy-app-server-private-ip>
+    User ubuntu
+    IdentityFile ~/.ssh/koy-key-pair.pem
+    ProxyJump aws-3tier-web
+    
+
+# 쉘에서 직접 입력
+~ ❯ ssh aws-3tier-app
+
+# App Tier 에 접속하여 psql 클라이언트를 설치하고 DB 접속 확인
+ubuntu@<koy-web-client-1a-private-ip>:~$ sudo apt-get update && sudo apt-get install -y postgresql-client
+ubuntu@<koy-web-client-1a-private-ip>:~$ psql -h <koy-db-postgres-rds-endpoint> -U postgres -d postgres
+
+# DB 접속 후 테스트 완료
+postgres=> select version();
+```
+<br /><br />
+
+위 과정을 통해 AWS 3-Tier 아키텍처의 테스트 및 검증을 모두 완료했습니다.
+
+다음 포스팅에서는 3-Tier 아키텍처를 기반으로 Route 53과 ALB를 연동하여, 실제 트래픽이 흐르는 웹 서비스 아키텍처를 구현해보겠습니다.

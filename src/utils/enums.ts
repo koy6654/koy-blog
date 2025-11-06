@@ -24,4 +24,5 @@ export enum MdxFiles {
   DOCKER_KUBENETES_TUTORIAL = '001-docker-kubenetes-install',
   KUBERNETES_DESCRIPTION = '002-kubernetes-description',
   KUBERNETES_LOCAL_INGRESS = '003-kubernetes-local-ingress',
+  AWS_3TIER_ARCHITECTURE = '004-aws-3tier-architecture',
 }
