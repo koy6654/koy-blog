@@ -2,9 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+/* body {
   font-family: Arial, Helvetica, sans-serif;
-}
+} */
 
 @layer utilities {
   .text-balance {
@@ -66,14 +66,25 @@ body {
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
-}
 
-@layer base {
+  html {
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  }
+
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  code,
+  pre {
+    font-family: var(--font-geist-mono), monospace;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
   }
 }
 
