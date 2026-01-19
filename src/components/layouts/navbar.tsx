@@ -10,50 +10,49 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@components/ui/dropdown-menu';
-import { MdOutlineLightMode, MdOutlineDarkMode } from 'react-icons/md';
+import { MdOutlineLightMode, MdOutlineDarkMode, MdMonitor } from 'react-icons/md';
 import { FaGithub } from 'react-icons/fa';
-import { DARK_THEME, LIGHT_THEME, NAVBAR_ICON_SIZE } from '@/utils/constants';
-import { useState } from 'react';
+import { DARK_THEME, LIGHT_THEME, SYSTEM_THEME, NAVBAR_ICON_SIZE } from '@/utils/constants';
+import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
+import Skeleton from '@components/ui/skeleton';
 
-type Theme = typeof DARK_THEME | typeof LIGHT_THEME;
-
-interface ThemeIconProps {
-  theme: Theme;
-}
-
-interface DropdownMenuItemIconProps {
-  theme: Theme;
-  onClick: () => void;
-}
-
-function ThemeIcon({ theme }: ThemeIconProps) {
+function ThemeIcon({ theme }: { theme: string | undefined }) {
   switch (theme) {
     case DARK_THEME:
-      return <MdOutlineDarkMode className="my-2" size={NAVBAR_ICON_SIZE} />;
+      return <MdOutlineDarkMode size={NAVBAR_ICON_SIZE} />;
     case LIGHT_THEME:
-      return <MdOutlineLightMode className="my-2" size={NAVBAR_ICON_SIZE} />;
+      return <MdOutlineLightMode size={NAVBAR_ICON_SIZE} />;
+    case SYSTEM_THEME:
+      return <MdMonitor size={NAVBAR_ICON_SIZE} />;
     default:
-      throw new Error('5587d933-4b91-58b1-b4f4-686aa4367c28');
+      return null;
   }
 }
 
-function DropdownMenuItemIcon({ theme, onClick }: DropdownMenuItemIconProps) {
+function DropdownMenuItemActivated({
+  currentTheme,
+  targetTheme,
+}: {
+  currentTheme: string | undefined;
+  targetTheme: string;
+}) {
   return (
-    <DropdownMenuItem className="flex flex-col justify-center items-center" onClick={onClick}>
-      <ThemeIcon theme={theme} />
-    </DropdownMenuItem>
+    <div className="flex items-center">
+      <span className="capitalize inline-block w-16 text-left font-medium">{targetTheme}</span>
+      {currentTheme === targetTheme && <span className="text-xs text-violet-500">Active</span>}
+    </div>
   );
 }
 
 export function NavBar() {
-  const [selectedTheme, setSelectedTheme] = useState<Theme>(DARK_THEME);
-  const { setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
-  const handleDropdownMenuItemIconOnClick = (theme: Theme) => {
-    setTheme(theme);
-    setSelectedTheme(theme);
-  };
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <nav className="navbar-footer px-8 md:px-28 flex items-center justify-between">
@@ -63,20 +62,39 @@ export function NavBar() {
         </h1>
       </div>
       <div className="flex items-center gap-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <ThemeIcon theme={selectedTheme} />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuLabel>Themes</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItemIcon theme={DARK_THEME} onClick={() => handleDropdownMenuItemIconOnClick(DARK_THEME)} />
-            <DropdownMenuItemIcon theme={LIGHT_THEME} onClick={() => handleDropdownMenuItemIconOnClick(LIGHT_THEME)} />
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <Link href="https://github.com/koy6654" target="_blank">
-          <FaGithub size={NAVBAR_ICON_SIZE} />
-        </Link>
+        {mounted ? (
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="outline-none">
+                <ThemeIcon theme={resolvedTheme} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Themes</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem onClick={() => setTheme(LIGHT_THEME)} className="justify-between cursor-pointer">
+                  <DropdownMenuItemActivated currentTheme={theme} targetTheme={LIGHT_THEME} />
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => setTheme(DARK_THEME)} className="justify-between cursor-pointer">
+                  <DropdownMenuItemActivated currentTheme={theme} targetTheme={DARK_THEME} />
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => setTheme(SYSTEM_THEME)} className="justify-between cursor-pointer">
+                  <DropdownMenuItemActivated currentTheme={theme} targetTheme={SYSTEM_THEME} />
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Link href="https://github.com/koy6654" target="_blank">
+              <FaGithub size={NAVBAR_ICON_SIZE} />
+            </Link>
+          </>
+        ) : (
+          <>
+            <Skeleton className="h-6 w-6" />
+            <Skeleton className="h-6 w-6" />
+          </>
+        )}
       </div>
     </nav>
   );

@@ -48,7 +48,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <RecoilProvider>
-          <ThemeProvider attribute="class" defaultTheme="dark">
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <NavBar />
             <Divider orientation="horizontal" />
             <div className="flex flex-row min-h-screen">
