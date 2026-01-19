@@ -1,10 +1,11 @@
-# Info
+# Koy Blog
 
-Next.js 기반 개인 블로그  
+Next.js 기반 개인 블로그
+
 [블로그 링크](https://koy-blog.vercel.app)
-<br /><br /><br />
+<br /><br />
 
-# How to run
+## 설치 및 실행
 
 ```
 1. .env.example 을 참고하여 .env 생성
