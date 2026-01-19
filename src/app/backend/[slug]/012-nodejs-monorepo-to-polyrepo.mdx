@@ -1,5 +1,5 @@
 ---
-id: '012-monorepo-to-polyrepo'
+id: '012-nodejs-monorepo-to-polyrepo'
 title: '[Node.js] 모노레포에서 폴리레포로의 여정'
 date: '2025-09-02'
 description: '조직의 방향성에 맞게 모노레포를 폴리레포로 변환하는 과정에서 겪었던 시행착오와 최종적으로 구현된 아키텍처 완성본'
@@ -34,12 +34,12 @@ description: '조직의 방향성에 맞게 모노레포를 폴리레포로 변�
 ## 모노레포에서 폴리레포로 전환한 과정 및 결과
 
 기존 서비스 코드는 API와 백그라운드 Worker들이 함께 포함된 모노레포 구조였습니다.
-![012-monorepo-to-polyrepo-1.png](/images/012-monorepo-to-polyrepo-1.png)
+![012-nodejs-monorepo-to-polyrepo-1.png](/images/012-nodejs-monorepo-to-polyrepo-1.png)
 <br /><br />
 
 하지만 제가 합류했을 당시에는, 아래와 같은 폴리레포 구조로 변경되어 있었습니다.<br />
 각 API, Worker 레포지토리에는 공통 로직들이 `from_xxx` 라는 이름으로 Copy & Paste가 되어 있는 상태였습니다.
-![012-monorepo-to-polyrepo-2.png](/images/012-monorepo-to-polyrepo-2.png)
+![012-nodejs-monorepo-to-polyrepo-2.png](/images/012-nodejs-monorepo-to-polyrepo-2.png)
 위 구조의 가장 큰 단점은 공통 코드 로직을 수정하는 과정이 매우 비효율적이라는 것입니다.<br />
 예를 들어, 2차 인증 정책을 변경하려할때 계정계, 채널계 모듈에서 같은 함수를 찾아 중복해서 수정했으며, 이 과정에서 같은 기능을 하는 함수임에도 이름이나 처리 로직 등이 서로 다르게 발전한 경우 코드 수정에 많은 시간을 소요하기도 했습니다.
 <br /><br />
@@ -49,13 +49,13 @@ description: '조직의 방향성에 맞게 모노레포를 폴리레포로 변�
 - Common Base: PgUtil, LogUtil 등 변경 가능성이 거의 없는 공통 로직
 - Common: 그 외의 공통 로직
 ```
-![012-monorepo-to-polyrepo-3.png](/images/012-monorepo-to-polyrepo-3.png)
+![012-nodejs-monorepo-to-polyrepo-3.png](/images/012-nodejs-monorepo-to-polyrepo-3.png)
 하지만 공통 로직을 패키지화하는 과정에서도 문제가 발생했습니다.<br />
 서비스 규모가 커지고 참여하는 개발자가 늘어나면서 Common 패키지의 업데이트 빈도가 높아졌고, 각 레포지토리에서 공통 패키지의 버전을 일관되게 관리하기가 점점 어려워졌습니다.
 <br /><br />
 
 이 문제의 원인은 너무 많은 책임을 한곳에 담고 있던 `Common` 패키지라고 판단했습니다. 그래서 자주 변경되는 기능들을 기능 단위로 분리하여 NPM 패키지로 아래와 같이 재구성했습니다.
-![012-monorepo-to-polyrepo-4.png](/images/012-monorepo-to-polyrepo-4.png)
+![012-nodejs-monorepo-to-polyrepo-4.png](/images/012-nodejs-monorepo-to-polyrepo-4.png)
 하지만 이렇게 분리하면서 또… 새로운 문제가 생겼습니다.
 
 예시로, `slonik`이라는 PSQL 라이브러리를 `기능별 NPM 패키지`로 구성해 두었지만, `Common Base(PgUtil)`에서 이를 사용해야 했기에 결국 해당 패키지를 설치해야 하는 상황이 발생했습니다.<br />
@@ -64,7 +64,7 @@ description: '조직의 방향성에 맞게 모노레포를 폴리레포로 변�
 
 
 이에 따라 `PgUtil`, `LogUtil`와 같은 코어 모듈들을 독립적인 라이브러리로 분리해 리팩토링했으며, 이를 통해 최종적으로 아래와 같이 경계를 명확히한 폴리레포를 구성하게 되었습니다.
-![012-monorepo-to-polyrepo-5.png](/images/012-monorepo-to-polyrepo-5.png)
+![012-nodejs-monorepo-to-polyrepo-5.png](/images/012-nodejs-monorepo-to-polyrepo-5.png)
 앞으로 운영을 이어가면서 부족한 부분은 점차 보완해 나갈 계획입니다.
 
 ---

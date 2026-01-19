@@ -19,6 +19,7 @@ export enum MdxFiles {
   PSQL_SLOW_QUERY_02 = '010-psql-slow-query-02',
   PSQL_SLOW_QUERY_03 = '011-psql-slow-query-03',
   MONOREPO_TO_POLYREPO = '012-monorepo-to-polyrepo',
+  KAFKA_FOR_MSA = '013-nodejs-kafka-for-msa',
 
   // INFRA
   DOCKER_KUBENETES_TUTORIAL = '001-docker-kubenetes-install',
