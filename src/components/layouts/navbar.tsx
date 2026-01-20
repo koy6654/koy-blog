@@ -1,6 +1,6 @@
 'use client';
 
-import '@styles/layout.css';
+import '@app/globals.css';
 import Link from 'next/link';
 import {
   DropdownMenu,
