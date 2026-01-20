@@ -1,8 +1,9 @@
+import '@app/globals.css';
+
 import type { Metadata, Viewport } from 'next';
 import { RecoilProvider } from '@/components/providers/recoil-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import localFont from 'next/font/local';
-import '@app/globals.css';
 import React from 'react';
 import { NavBar } from '@/components/layouts/navbar';
 import { SideBar } from '@/components/layouts/sidebar';
@@ -48,7 +49,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <RecoilProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {/* <ThemeProvider attribute="class" defaultTheme="system" enableSystem> */}
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
             <NavBar />
             <Divider orientation="horizontal" />
             <div className="flex flex-row min-h-screen">

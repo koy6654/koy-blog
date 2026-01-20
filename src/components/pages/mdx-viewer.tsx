@@ -5,7 +5,6 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { getPostFileDataByName } from '@/utils/functions/gray-matter';
 import { MdxFiles } from '@/utils/enums';
 import remarkGfm from 'remark-gfm';
-import Image from 'next/image';
 
 export interface MdxViewerSlug {
   params: {
