@@ -13,11 +13,7 @@ const Accordion = React.forwardRef<
     className?: string;
   }
 >(({ className, ...props }, ref) => (
-  <AccordionPrimitive.Root
-    ref={ref}
-    className={tailwindMerge('w-full', className)}
-    {...props}
-  />
+  <AccordionPrimitive.Root ref={ref} className={tailwindMerge('w-full', className)} {...props} />
 ));
 Accordion.displayName = 'Accordion';
 
@@ -27,11 +23,7 @@ const AccordionItem = React.forwardRef<
     className?: string;
   }
 >(({ className, ...props }, ref) => (
-  <AccordionPrimitive.Item
-    ref={ref}
-    className={tailwindMerge('', className)}
-    {...props}
-  />
+  <AccordionPrimitive.Item ref={ref} className={tailwindMerge('', className)} {...props} />
 ));
 AccordionItem.displayName = 'AccordionItem';
 

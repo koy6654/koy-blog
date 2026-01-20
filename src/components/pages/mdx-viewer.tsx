@@ -5,6 +5,7 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { getPostFileDataByName } from '@/utils/functions/gray-matter';
 import { MdxFiles } from '@/utils/enums';
 import remarkGfm from 'remark-gfm';
+import Image from 'next/image';
 
 export interface MdxViewerSlug {
   params: {
@@ -30,7 +31,7 @@ const CodeBlock = ({ children }: CodeBlockProps) => {
 };
 
 const MdxComponents = {
-  hr: (props: React.HTMLAttributes<HTMLHRElement>) => (
+  hr: () => (
     <>
       <br />
       <br />
@@ -66,7 +67,9 @@ const MdxComponents = {
   a: (props: React.HTMLAttributes<HTMLAnchorElement>) => (
     <a className="text-blue-500 hover:underline dark:text-blue-300" {...props} />
   ),
-  img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img className="max-w-full h-auto" {...props} />,
+  img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
+    <img className="max-w-full h-auto" alt={props.alt || ''} {...props} />
+  ),
   blockquote: (props: React.BlockquoteHTMLAttributes<HTMLQuoteElement>) => (
     <blockquote className="border-l-4 pl-4 italic text-black dark:text-gray-400 mt-4 mb-4" {...props} />
   ),

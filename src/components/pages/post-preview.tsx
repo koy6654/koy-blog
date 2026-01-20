@@ -61,7 +61,7 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
     setIsLoadingMdxList(true);
 
     fetchMdxList();
-  }, [cursor]);
+  }, [page, cursor]);
 
   useEffect(() => {
     if (postFileDatas.length !== 0) {

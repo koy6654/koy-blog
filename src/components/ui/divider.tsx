@@ -3,10 +3,7 @@ interface DividerProps {
   orientation?: 'horizontal' | 'vertical';
 }
 
-export const Divider = ({
-  className,
-  orientation = 'horizontal',
-}: DividerProps) => {
+export const Divider = ({ className, orientation = 'horizontal' }: DividerProps) => {
   return (
     <div
       className={`${className ?? ''} ${orientation === 'vertical' ? 'border-r' : 'border-t'} border-gray-300 dark:border-gray-600`}
