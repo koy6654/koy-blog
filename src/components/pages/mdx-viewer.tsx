@@ -63,8 +63,20 @@ const MdxComponents = {
   li: (props: React.HTMLAttributes<HTMLLIElement>) => <li className="ml-4" {...props} />,
   strong: (props: React.HTMLAttributes<HTMLElement>) => <strong className="font-semibold" {...props} />,
   em: (props: React.HTMLAttributes<HTMLElement>) => <em className="italic text-black dark:text-gray-300" {...props} />,
+  // a: (props: React.HTMLAttributes<HTMLAnchorElement>) => (
+  //   <a className="text-blue-500 hover:underline dark:text-blue-300" {...props} />
+  // ),
   a: (props: React.HTMLAttributes<HTMLAnchorElement>) => (
-    <a className="text-blue-500 hover:underline dark:text-blue-300" {...props} />
+    <a
+      className="
+        font-medium 
+        text-gray-900 dark:text-gray-100 
+        underline decoration-gray-400 underline-offset-4 
+        hover:text-blue-600 hover:decoration-blue-600 
+        transition-colors duration-200
+      "
+      {...props}
+    />
   ),
   img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
     <img className="max-w-full h-auto" alt={props.alt || ''} {...props} />
