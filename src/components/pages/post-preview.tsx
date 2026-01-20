@@ -4,7 +4,7 @@ import { LoadingContent, LoadingMdxList } from '@/components/ui/loading';
 import { PostFileData } from '@/utils/functions/gray-matter';
 import { getMdxList } from '@/utils/requests';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'; // searchParams, pathname 추가
 import { PagesType } from '@/utils/types';
 import {
   Pagination,
@@ -25,10 +25,12 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
   const pageGroupLimit = 5;
 
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const cursor = Number(searchParams.get('page')) || 1;
 
   const [postFileDatas, setPostFileDatas] = useState<PostFileData[]>([]);
-
-  const [cursor, setCursor] = useState<number>(1);
   const [currentPageNumber, setCurrentPageNumber] = useState<number>(0);
   const [currentPageGroup, setCurrentPageGroup] = useState<number>(0);
   const [totalPageGroup, setTotalPageGroup] = useState<number>(0);
@@ -38,6 +40,7 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
 
   useEffect(() => {
     const fetchMdxList = async (): Promise<void> => {
+      setIsLoadingMdxList(true);
       const result = await getMdxList(page, cursor, pageLimit);
       const total = result.total;
       const files = result.files;
@@ -45,9 +48,7 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
       setPostFileDatas(files);
 
       const totalPages = new BigNumber(total).dividedBy(pageLimit).integerValue(BigNumber.ROUND_CEIL).toNumber();
-
       const currentGroup = new BigNumber(cursor - 1).dividedToIntegerBy(pageGroupLimit).toNumber();
-
       const totalGroups = new BigNumber(totalPages)
         .dividedBy(pageGroupLimit)
         .integerValue(BigNumber.ROUND_CEIL)
@@ -56,22 +57,21 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
       setCurrentPageNumber(totalPages);
       setCurrentPageGroup(currentGroup);
       setTotalPageGroup(totalGroups);
-    };
 
-    setIsLoadingMdxList(true);
+      setIsLoadingMdxList(false);
+    };
 
     fetchMdxList();
   }, [page, cursor]);
 
-  useEffect(() => {
-    if (postFileDatas.length !== 0) {
-      setIsLoadingMdxList(false);
-    }
-  }, [postFileDatas]);
+  const handlePageChange = (pageNumber: number) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', pageNumber.toString());
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   const handleClick = (path: string) => {
     setIsLoadingMdxContent(true);
-
     setTimeout(() => {
       router.push(path);
     }, 0.1 * 1000);
@@ -124,7 +124,7 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious
-              onClick={() => setCursor((currentPageGroup - 1) * pageGroupLimit + 1)}
+              onClick={() => handlePageChange((currentPageGroup - 1) * pageGroupLimit + 1)}
               showIcon={currentPageGroup > 0}
             />
           </PaginationItem>
@@ -137,7 +137,7 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
 
             return (
               <PaginationItem key={pageNumber}>
-                <PaginationLink isActive={pageNumber === cursor} onClick={() => setCursor(pageNumber)}>
+                <PaginationLink isActive={pageNumber === cursor} onClick={() => handlePageChange(pageNumber)}>
                   {pageNumber}
                 </PaginationLink>
               </PaginationItem>
@@ -146,7 +146,7 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
 
           <PaginationItem>
             <PaginationNext
-              onClick={() => setCursor((currentPageGroup + 1) * pageGroupLimit + 1)}
+              onClick={() => handlePageChange((currentPageGroup + 1) * pageGroupLimit + 1)}
               showIcon={currentPageGroup < totalPageGroup - 1}
             />
           </PaginationItem>
