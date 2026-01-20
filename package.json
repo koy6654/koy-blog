@@ -21,7 +21,6 @@
     "bignumber.js": "^9.3.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
-    "eslint-config-airbnb": "^19.0.4",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
     "gray-matter": "^4.0.3",
