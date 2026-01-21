@@ -3,8 +3,8 @@
 import { LoadingContent, LoadingMdxList } from '@/components/ui/loading';
 import { PostFileData } from '@/utils/functions/gray-matter';
 import { getMdxList } from '@/utils/requests';
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation'; // searchParams, pathname 추가
+import { useEffect, useState, Suspense } from 'react'; // Suspense 추가
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { PagesType } from '@/utils/types';
 import {
   Pagination,
@@ -20,7 +20,7 @@ interface PostPreviewProps {
   page: PagesType;
 }
 
-export const PostPreview = ({ page }: PostPreviewProps) => {
+const PostPreviewContent = ({ page }: PostPreviewProps) => {
   const pageLimit = 5;
   const pageGroupLimit = 5;
 
@@ -153,5 +153,13 @@ export const PostPreview = ({ page }: PostPreviewProps) => {
         </PaginationContent>
       </Pagination>
     </main>
+  );
+};
+
+export const PostPreview = (props: PostPreviewProps) => {
+  return (
+    <Suspense fallback={<LoadingContent />}>
+      <PostPreviewContent {...props} />
+    </Suspense>
   );
 };
